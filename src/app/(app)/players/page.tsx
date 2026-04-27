@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -20,9 +20,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Loader2, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronRight,
+  Loader2,
+  Search,
+  Users,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useMemo } from "react";
 
 type PlayerSortKey = "name" | "server" | "lastSeen" | "firstSeen" | "status";
 type SortDir = "asc" | "desc";
@@ -35,6 +42,45 @@ interface Player {
   firstSeen: string;
   lastSeen: string;
   isOnline: boolean;
+}
+
+interface SortableHeadProps {
+  label: string;
+  sortKey: PlayerSortKey;
+  activeSortKey: PlayerSortKey;
+  sortDir: SortDir;
+  onToggle: (key: PlayerSortKey) => void;
+}
+
+function SortableHead({
+  label,
+  sortKey,
+  activeSortKey,
+  sortDir,
+  onToggle,
+}: SortableHeadProps) {
+  const icon =
+    activeSortKey === sortKey ? (
+      sortDir === "asc" ? (
+        <ArrowUp className="h-3 w-3" />
+      ) : (
+        <ArrowDown className="h-3 w-3" />
+      )
+    ) : (
+      <ArrowUpDown className="h-3 w-3 opacity-30" />
+    );
+
+  return (
+    <TableHead
+      className="cursor-pointer select-none transition-colors hover:text-foreground"
+      onClick={() => onToggle(sortKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {icon}
+      </span>
+    </TableHead>
+  );
 }
 
 export default function PlayersPage() {
@@ -53,7 +99,7 @@ export default function PlayersPage() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    axios.get("/api/servers").then(res => setServers(res.data));
+    axios.get("/api/servers").then((res) => setServers(res.data));
   }, []);
 
   const fetchPlayers = useCallback(async () => {
@@ -64,7 +110,7 @@ export default function PlayersPage() {
       });
       setPlayers(data.data);
       setTotal(data.total);
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch players");
     } finally {
       setLoading(false);
@@ -88,8 +134,12 @@ export default function PlayersPage() {
       setNewPlayerId("");
       setShowAddForm(false);
       fetchPlayers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to add player");
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to add player"
+          : "Failed to add player"
+      );
     } finally {
       setAdding(false);
     }
@@ -112,20 +162,6 @@ export default function PlayersPage() {
     else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const SortableHead = ({ label, k }: { label: string; k: PlayerSortKey }) => (
-    <TableHead
-      className="cursor-pointer select-none hover:text-foreground transition-colors"
-      onClick={() => toggleSort(k)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        {sortKey === k
-          ? sortDir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
-          : <ArrowUpDown className="w-3 h-3 opacity-30" />}
-      </span>
-    </TableHead>
-  );
-
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
@@ -133,7 +169,7 @@ export default function PlayersPage() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">Players</h1>
           <p className="text-muted-foreground">View and search tracked players across all servers.</p>
         </div>
-        <Button onClick={() => setShowAddForm(!showAddForm)}>
+        <Button onClick={() => setShowAddForm((value) => !value)}>
           {showAddForm ? "Cancel" : "Add Player Manually"}
         </Button>
       </div>
@@ -199,11 +235,41 @@ export default function PlayersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Server</TableHead>
-                  <TableHead>Last Seen</TableHead>
-                  <TableHead>First Seen</TableHead>
+                  <SortableHead
+                    label="Status"
+                    sortKey="status"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
+                  <SortableHead
+                    label="Name"
+                    sortKey="name"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
+                  <SortableHead
+                    label="Server"
+                    sortKey="server"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
+                  <SortableHead
+                    label="Last Seen"
+                    sortKey="lastSeen"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
+                  <SortableHead
+                    label="First Seen"
+                    sortKey="firstSeen"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>

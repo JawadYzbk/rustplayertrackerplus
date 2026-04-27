@@ -53,6 +53,7 @@ export default function ServersPage() {
   const [loading, setLoading] = useState(true);
   const [newId, setNewId] = useState("");
   const [adding, setAdding] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date().getTime());
 
   // Modal state
   const [liveModalServer, setLiveModalServer] = useState<Server | null>(null);
@@ -65,20 +66,36 @@ export default function ServersPage() {
   const [sortKey, setSortKey] = useState<SortKey>("playtime");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  useEffect(() => {
-    fetchServers();
-  }, []);
-
   const fetchServers = async () => {
     try {
       const { data } = await axios.get<Server[]>("/api/servers");
       setServers(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch servers");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void fetchServers();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!liveModalServer) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setCurrentTime(new Date().getTime());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [liveModalServer]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,8 +106,12 @@ export default function ServersPage() {
       toast.success("Server added successfully");
       setNewId("");
       fetchServers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to add server");
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to add server"
+          : "Failed to add server"
+      );
     } finally {
       setAdding(false);
     }
@@ -118,8 +139,12 @@ export default function ServersPage() {
     try {
       await axios.post("/api/players/create", { id: playerId, name, serverId, sessionStart });
       toast.success("Player added to tracker list");
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to track player");
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to track player"
+          : "Failed to track player"
+      );
     } finally {
       setAddingPlayerId(null);
     }
@@ -133,15 +158,14 @@ export default function ServersPage() {
       await axios.delete(`/api/servers/${id}`);
       toast.success("Server deleted");
       fetchServers();
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete server");
     }
   };
 
   // Sorted & filtered live players
   const displayedPlayers = useMemo(() => {
-    const now = Date.now();
-    let filtered = livePlayers.filter(p =>
+    const filtered = livePlayers.filter(p =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.id.includes(search)
     );
@@ -152,13 +176,13 @@ export default function ServersPage() {
         return sortDir === "asc" ? cmp : -cmp;
       }
       // playtime: no sessionStart = 0ms elapsed
-      const aMs = a.sessionStart ? now - new Date(a.sessionStart).getTime() : 0;
-      const bMs = b.sessionStart ? now - new Date(b.sessionStart).getTime() : 0;
+      const aMs = a.sessionStart ? currentTime - new Date(a.sessionStart).getTime() : 0;
+      const bMs = b.sessionStart ? currentTime - new Date(b.sessionStart).getTime() : 0;
       return sortDir === "desc" ? bMs - aMs : aMs - bMs;
     });
 
     return filtered;
-  }, [livePlayers, search, sortKey, sortDir]);
+  }, [currentTime, livePlayers, search, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -169,9 +193,16 @@ export default function ServersPage() {
     }
   };
 
-  const SortIcon = ({ k }: { k: SortKey }) => {
-    if (sortKey !== k) return <ArrowUpDown className="w-3 h-3 opacity-40" />;
-    return sortDir === "desc" ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />;
+  const renderSortIcon = (key: SortKey) => {
+    if (sortKey !== key) {
+      return <ArrowUpDown className="w-3 h-3 opacity-40" />;
+    }
+
+    return sortDir === "desc" ? (
+      <ArrowDown className="w-3 h-3" />
+    ) : (
+      <ArrowUp className="w-3 h-3" />
+    );
   };
 
   return (
@@ -311,7 +342,7 @@ export default function ServersPage() {
                   className="h-8 gap-1.5 text-xs"
                   onClick={() => toggleSort("playtime")}
                 >
-                  <Clock className="w-3 h-3" /> Playtime <SortIcon k="playtime" />
+                  <Clock className="w-3 h-3" /> Playtime {renderSortIcon("playtime")}
                 </Button>
                 <Button
                   size="sm"
@@ -319,7 +350,7 @@ export default function ServersPage() {
                   className="h-8 gap-1.5 text-xs"
                   onClick={() => toggleSort("alpha")}
                 >
-                  A–Z <SortIcon k="alpha" />
+                  A-Z {renderSortIcon("alpha")}
                 </Button>
               </div>
             )}
@@ -342,7 +373,7 @@ export default function ServersPage() {
                           {p.sessionStart && (
                             <span className="text-xs text-muted-foreground flex items-center font-normal shrink-0">
                               <Clock className="w-3 h-3 mr-1" />
-                              {formatDuration(Date.now() - new Date(p.sessionStart).getTime())}
+                              {formatDuration(currentTime - new Date(p.sessionStart).getTime())}
                             </span>
                           )}
                         </p>

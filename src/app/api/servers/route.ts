@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import {
+  ensureAppUser,
+  requireCurrentUserId,
+  unauthorizedJsonResponse,
+} from "@/lib/current-user";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import axios from "axios";
@@ -8,7 +13,15 @@ const CreateServerSchema = z.object({
 });
 
 export async function GET() {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
   const servers = await prisma.server.findMany({
+    where: { userId },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { players: true, sessions: true } },
@@ -18,6 +31,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
   const body = await req.json();
   const parsed = CreateServerSchema.safeParse(body);
   if (!parsed.success) {
@@ -26,7 +46,9 @@ export async function POST(req: NextRequest) {
 
   const { id } = parsed.data;
 
-  const existing = await prisma.server.findUnique({ where: { id } });
+  const existing = await prisma.server.findUnique({
+    where: { userId_id: { userId, id } },
+  });
   if (existing) {
     return Response.json({ error: "Server already exists" }, { status: 409 });
   }
@@ -45,6 +67,10 @@ export async function POST(req: NextRequest) {
     console.error(`Failed to fetch server name for ${id}`, err);
   }
 
-  const server = await prisma.server.create({ data: { id, name } });
+  await ensureAppUser(userId);
+
+  const server = await prisma.server.create({
+    data: { userId, id, name },
+  });
   return Response.json(server, { status: 201 });
 }

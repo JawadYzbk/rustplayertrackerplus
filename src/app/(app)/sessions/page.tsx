@@ -57,7 +57,7 @@ export default function SessionsPage() {
       });
       setSessions(data.data);
       setTotal(data.total);
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch sessions");
     } finally {
       setLoading(false);

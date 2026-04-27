@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import {
+  requireCurrentUserId,
+  unauthorizedJsonResponse,
+} from "@/lib/current-user";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -10,6 +14,13 @@ const QuerySchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
   const raw = Object.fromEntries(req.nextUrl.searchParams.entries());
   const parsed = QuerySchema.safeParse(raw);
   if (!parsed.success) {
@@ -19,7 +30,11 @@ export async function GET(req: NextRequest) {
   const { playerId, serverId, page, limit } = parsed.data;
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: {
+    userId: string;
+    playerId?: string;
+    serverId?: string;
+  } = { userId };
   if (playerId) where.playerId = playerId;
   if (serverId) where.serverId = serverId;
 

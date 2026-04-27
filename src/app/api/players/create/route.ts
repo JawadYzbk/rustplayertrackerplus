@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import {
+  ensureAppUser,
+  requireCurrentUserId,
+  unauthorizedJsonResponse,
+} from "@/lib/current-user";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import axios from "axios";
@@ -11,6 +16,13 @@ const CreatePlayerSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
   const body = await req.json();
   const parsed = CreatePlayerSchema.safeParse(body);
   if (!parsed.success) {
@@ -19,13 +31,17 @@ export async function POST(req: NextRequest) {
 
   const { id, serverId, name, sessionStart } = parsed.data;
 
-  const existing = await prisma.player.findUnique({ where: { id } });
+  const existing = await prisma.player.findUnique({
+    where: { userId_id: { userId, id } },
+  });
   if (existing) {
     return Response.json({ error: "Player is already tracked" }, { status: 409 });
   }
 
   // Ensure server exists
-  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  const server = await prisma.server.findUnique({
+    where: { userId_id: { userId, id: serverId } },
+  });
   if (!server) {
     return Response.json({ error: "Server does not exist in tracker" }, { status: 400 });
   }
@@ -46,8 +62,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  await ensureAppUser(userId);
+
   const player = await prisma.player.create({
     data: {
+      userId,
       id,
       name: playerName,
       serverId,
@@ -58,11 +77,11 @@ export async function POST(req: NextRequest) {
 
   if (sessionStart) {
     const openSession = await prisma.session.findFirst({
-      where: { playerId: id, serverId, leftAt: null },
+      where: { userId, playerId: id, serverId, leftAt: null },
     });
     if (!openSession) {
       await prisma.session.create({
-        data: { playerId: id, serverId, joinedAt: new Date(sessionStart) },
+        data: { userId, playerId: id, serverId, joinedAt: new Date(sessionStart) },
       });
     }
   }

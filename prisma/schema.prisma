@@ -9,66 +9,92 @@ datasource db {
   provider = "postgresql"
 }
 
-model Server {
+model AppUser {
   id        String   @id
+  createdAt DateTime @default(now())
+
+  servers     Server[]
+  players     Player[]
+  sessions    Session[]
+  dailyStats  PlayerDailyStat[]
+  hourlyStats PlayerHourlyStat[]
+}
+
+model Server {
+  userId    String
+  id        String
   name      String
   createdAt DateTime @default(now())
 
+  user     AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
   players  Player[]
   sessions Session[]
+
+  @@id([userId, id])
+  @@index([userId, createdAt])
 }
 
 model Player {
-  id       String   @id
-  name     String
-  serverId String
+  userId    String
+  id        String
+  name      String
+  serverId  String
   firstSeen DateTime @default(now())
   lastSeen  DateTime
 
-  server   Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  sessions Session[]
-  dailyStats PlayerDailyStat[]
+  user        AppUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server      Server            @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)
+  sessions    Session[]
+  dailyStats  PlayerDailyStat[]
   hourlyStats PlayerHourlyStat[]
 
-  @@index([serverId])
+  @@id([userId, id])
+  @@index([userId, serverId])
 }
 
 model Session {
   id          Int       @id @default(autoincrement())
+  userId      String
   playerId    String
   serverId    String
   joinedAt    DateTime
   leftAt      DateTime?
   durationSec Int?
 
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player Player  @relation(fields: [userId, playerId], references: [userId, id], onDelete: Cascade)
+  server Server  @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)
 
-  @@index([playerId, joinedAt])
-  @@index([serverId])
+  @@index([userId, playerId, joinedAt])
+  @@index([userId, serverId])
+  @@index([userId, leftAt])
 }
 
 model PlayerDailyStat {
   id            Int      @id @default(autoincrement())
+  userId        String
   playerId      String
   date          DateTime @db.Date
   totalTimeSec  Int      @default(0)
   sessionsCount Int      @default(0)
 
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player Player  @relation(fields: [userId, playerId], references: [userId, id], onDelete: Cascade)
 
-  @@unique([playerId, date])
-  @@index([playerId])
+  @@unique([userId, playerId, date])
+  @@index([userId, playerId])
 }
 
 model PlayerHourlyStat {
   id           Int    @id @default(autoincrement())
+  userId       String
   playerId     String
   hour         Int    // 0-23
   totalTimeSec Int    @default(0)
 
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player Player  @relation(fields: [userId, playerId], references: [userId, id], onDelete: Cascade)
 
-  @@unique([playerId, hour])
-  @@index([playerId])
+  @@unique([userId, playerId, hour])
+  @@index([userId, playerId])
 }

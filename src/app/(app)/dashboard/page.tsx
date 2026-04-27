@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
+import { Activity, Clock, Loader2, Server, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Users, Server, Clock, Activity, Loader2 } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 interface ServerStat {
   id: string;
@@ -18,7 +18,7 @@ interface ServerStat {
   _count: { players: number; sessions: number };
 }
 
-export default function Dashboard() {
+export default function DashboardPage() {
   const [servers, setServers] = useState<ServerStat[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,12 +33,13 @@ export default function Dashboard() {
         setLoading(false);
       }
     }
+
     fetchStats();
   }, []);
 
   const totalServers = servers.length;
-  const totalPlayers = servers.reduce((acc, s) => acc + s._count.players, 0);
-  const totalSessions = servers.reduce((acc, s) => acc + s._count.sessions, 0);
+  const totalPlayers = servers.reduce((acc, item) => acc + item._count.players, 0);
+  const totalSessions = servers.reduce((acc, item) => acc + item._count.sessions, 0);
 
   if (loading) {
     return (
@@ -49,10 +50,18 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your Rust player intelligence platform.</p>
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="mb-2 text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Overview of your private Rust player intelligence workspace.
+          </p>
+        </div>
+
+        <Link href="/servers">
+          <Button>Add your next server</Button>
+        </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -63,10 +72,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalServers.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active instances</p>
+            <p className="mt-1 text-xs text-muted-foreground">Active instances</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Players</CardTitle>
@@ -74,10 +83,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalPlayers.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all servers</p>
+            <p className="mt-1 text-xs text-muted-foreground">Across all servers</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
@@ -85,7 +94,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalSessions.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Historical records</p>
+            <p className="mt-1 text-xs text-muted-foreground">Historical records</p>
           </CardContent>
         </Card>
 
@@ -96,7 +105,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">Healthy</div>
-            <p className="text-xs text-muted-foreground mt-1">Worker polling active</p>
+            <p className="mt-1 text-xs text-muted-foreground">Worker polling active</p>
           </CardContent>
         </Card>
       </div>
@@ -111,29 +120,38 @@ export default function Dashboard() {
               {servers.slice(0, 5).map((server) => (
                 <div key={server.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-secondary flex items-center justify-center">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary">
                       <Server size={14} className="text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-sm font-medium leading-none">{server.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{server.id}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{server.id}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium">{server._count.players.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">Players</p>
+                    <p className="text-sm font-medium">
+                      {server._count.players.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] uppercase text-muted-foreground">
+                      Players
+                    </p>
                   </div>
                 </div>
               ))}
               {servers.length === 0 && (
-                <div className="text-center py-4 text-muted-foreground text-sm">
-                  No servers added yet.
+                <div className="rounded-xl border border-dashed px-4 py-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No servers added yet. Start by connecting your first
+                    BattleMetrics server.
+                  </p>
                 </div>
               )}
             </div>
             <div className="mt-6">
               <Link href="/servers">
-                <Button variant="outline" className="w-full">Manage Servers</Button>
+                <Button variant="outline" className="w-full">
+                  Manage Servers
+                </Button>
               </Link>
             </div>
           </CardContent>
@@ -144,21 +162,25 @@ export default function Dashboard() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <Link href="/players" className="block">
-              <div className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-secondary transition-colors">
+            <Link href="/players" className="block">
+              <div className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-secondary">
                 <Users className="h-6 w-6 text-primary" />
                 <div>
                   <h4 className="text-sm font-semibold">Player Directory</h4>
-                  <p className="text-xs text-muted-foreground">Search and analyze individual players.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Search and analyze individual players.
+                  </p>
                 </div>
               </div>
             </Link>
             <Link href="/sessions" className="block">
-              <div className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-secondary transition-colors">
+              <div className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-secondary">
                 <Clock className="h-6 w-6 text-primary" />
                 <div>
                   <h4 className="text-sm font-semibold">Session Logs</h4>
-                  <p className="text-xs text-muted-foreground">View real-time player join/leave events.</p>
+                  <p className="text-xs text-muted-foreground">
+                    View real-time player join and leave history.
+                  </p>
                 </div>
               </div>
             </Link>

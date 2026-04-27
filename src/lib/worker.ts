@@ -9,7 +9,6 @@ import { prisma } from "./prisma";
 import { splitSessionAcrossHours } from "./analytics";
 
 const POLL_INTERVAL_MS = 60_000;
-const ONLINE_THRESHOLD_SEC = 120;
 
 // ─── BattleMetrics Types ──────────────────────────────────────────────────────
 
@@ -17,13 +16,36 @@ interface BMPlayerAttributes {
   name: string;
 }
 
-interface BMPlayer {
+interface BMPlayerIncluded {
+  type: "player";
   id: string;
   attributes: BMPlayerAttributes;
 }
 
+interface BMSessionIncluded {
+  type: "session";
+  id: string;
+  attributes?: {
+    start?: string;
+  };
+  relationships?: {
+    player?: {
+      data?: {
+        id?: string;
+      };
+    };
+  };
+}
+
+interface BMUnknownIncluded {
+  type: string;
+  id: string;
+}
+
+type BMIncluded = BMPlayerIncluded | BMSessionIncluded | BMUnknownIncluded;
+
 interface BMServerResponse {
-  included?: BMPlayer[];
+  included?: BMIncluded[];
 }
 
 // ─── Main Poll Loop ───────────────────────────────────────────────────────────
@@ -38,7 +60,7 @@ export function startWorker(): void {
     const pingUrl = process.env.RENDER_EXTERNAL_URL;
     setInterval(async () => {
       try {
-        await axios.get(`${pingUrl}/api/servers`, { timeout: 10_000 });
+        await axios.get(pingUrl, { timeout: 10_000 });
         console.log("[Worker] Self-ping OK");
       } catch {
         // silently ignore
@@ -49,8 +71,10 @@ export function startWorker(): void {
 
 async function runPoll(): Promise<void> {
   try {
-    const servers = await prisma.server.findMany({ select: { id: true } });
-    await Promise.allSettled(servers.map((s) => pollServer(s.id)));
+    const servers = await prisma.server.findMany({
+      select: { userId: true, id: true },
+    });
+    await Promise.allSettled(servers.map((s) => pollServer(s.userId, s.id)));
   } catch (err) {
     console.error("[Worker] Poll cycle error:", err);
   }
@@ -58,7 +82,7 @@ async function runPoll(): Promise<void> {
 
 // ─── Per-Server Poll ──────────────────────────────────────────────────────────
 
-async function pollServer(serverId: string): Promise<void> {
+async function pollServer(userId: string, serverId: string): Promise<void> {
   try {
     const url = `https://api.battlemetrics.com/servers/${serverId}?include=player,session`;
     const headers: Record<string, string> = {};
@@ -66,12 +90,15 @@ async function pollServer(serverId: string): Promise<void> {
       headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
     }
 
-    const { data } = await axios.get<any>(url, { headers, timeout: 15_000 });
+    const { data } = await axios.get<BMServerResponse>(url, {
+      headers,
+      timeout: 15_000,
+    });
     const included = data.included || [];
 
     // Find tracked players in DB
     const trackedPlayers = await prisma.player.findMany({
-      where: { serverId },
+      where: { userId, serverId },
       select: { id: true },
     });
     const trackedIds = new Set(trackedPlayers.map((p) => p.id));
@@ -79,36 +106,48 @@ async function pollServer(serverId: string): Promise<void> {
     // Map player to session start time
     const sessionMap = new Map<string, Date>();
     for (const inc of included) {
-      if (inc.type === "session" && inc.attributes?.start && inc.relationships?.player?.data?.id) {
+      if (
+        inc.type === "session" &&
+        inc.attributes?.start &&
+        inc.relationships?.player?.data?.id
+      ) {
         sessionMap.set(inc.relationships.player.data.id, new Date(inc.attributes.start));
       }
     }
 
     const onlinePlayers = included.filter(
-      (inc: any) => inc.type === "player" && typeof inc.id === "string"
+      (inc): inc is BMPlayerIncluded => inc.type === "player"
     );
 
-    const onlineIds = new Set<string>(onlinePlayers.map((p: any) => String(p.id)));
+    const onlineIds = new Set<string>(onlinePlayers.map((p) => p.id));
     const now = new Date();
 
     // ── Handle tracked players (join / stay) ───────────────────────────────
     for (const bm of onlinePlayers) {
       if (trackedIds.has(bm.id)) {
         const sessionStart = sessionMap.get(bm.id) || now;
-        await handlePlayerOnline(bm.id, bm.attributes?.name || "Unknown", serverId, now, sessionStart);
+        await handlePlayerOnline(
+          userId,
+          bm.id,
+          bm.attributes?.name || "Unknown",
+          serverId,
+          now,
+          sessionStart
+        );
       }
     }
 
     // ── Handle players who left (close open sessions for this server) ─────
-    await handlePlayersLeft(serverId, onlineIds, now);
+    await handlePlayersLeft(userId, serverId, onlineIds, now);
   } catch (err) {
-    console.error(`[Worker] Error polling server ${serverId}:`, err);
+    console.error(`[Worker] Error polling server ${serverId} for user ${userId}:`, err);
   }
 }
 
 // ─── Player Join / Stay ───────────────────────────────────────────────────────
 
 async function handlePlayerOnline(
+  userId: string,
   playerId: string,
   name: string,
   serverId: string,
@@ -117,18 +156,18 @@ async function handlePlayerOnline(
 ): Promise<void> {
   // Update last seen
   await prisma.player.update({
-    where: { id: playerId },
+    where: { userId_id: { userId, id: playerId } },
     data: { name, lastSeen: now },
   });
 
   // Open session if none exists
   const openSession = await prisma.session.findFirst({
-    where: { playerId, serverId, leftAt: null },
+    where: { userId, playerId, serverId, leftAt: null },
   });
 
   if (!openSession) {
     await prisma.session.create({
-      data: { playerId, serverId, joinedAt: sessionStart },
+      data: { userId, playerId, serverId, joinedAt: sessionStart },
     });
   }
 }
@@ -136,13 +175,14 @@ async function handlePlayerOnline(
 // ─── Player Leave ─────────────────────────────────────────────────────────────
 
 async function handlePlayersLeft(
+  userId: string,
   serverId: string,
   onlineIds: Set<string>,
   now: Date
 ): Promise<void> {
   // Find all open sessions for this server whose player is no longer online
   const staleSessions = await prisma.session.findMany({
-    where: { serverId, leftAt: null },
+    where: { userId, serverId, leftAt: null },
     select: { id: true, playerId: true, joinedAt: true },
   });
 
@@ -158,13 +198,14 @@ async function handlePlayersLeft(
     });
 
     // Aggregate stats
-    await aggregateSession(session.playerId, session.joinedAt, now, durationSec);
+    await aggregateSession(userId, session.playerId, session.joinedAt, now, durationSec);
   }
 }
 
 // ─── Aggregation on Session Close ────────────────────────────────────────────
 
 async function aggregateSession(
+  userId: string,
   playerId: string,
   joinedAt: Date,
   leftAt: Date,
@@ -176,8 +217,14 @@ async function aggregateSession(
   );
 
   await prisma.playerDailyStat.upsert({
-    where: { playerId_date: { playerId, date: dateKey } },
-    create: { playerId, date: dateKey, totalTimeSec: durationSec, sessionsCount: 1 },
+    where: { userId_playerId_date: { userId, playerId, date: dateKey } },
+    create: {
+      userId,
+      playerId,
+      date: dateKey,
+      totalTimeSec: durationSec,
+      sessionsCount: 1,
+    },
     update: {
       totalTimeSec: { increment: durationSec },
       sessionsCount: { increment: 1 },
@@ -189,8 +236,8 @@ async function aggregateSession(
 
   for (const { hour, seconds } of splits) {
     await prisma.playerHourlyStat.upsert({
-      where: { playerId_hour: { playerId, hour } },
-      create: { playerId, hour, totalTimeSec: seconds },
+      where: { userId_playerId_hour: { userId, playerId, hour } },
+      create: { userId, playerId, hour, totalTimeSec: seconds },
       update: { totalTimeSec: { increment: seconds } },
     });
   }

@@ -51,20 +51,23 @@ function startOfDay(d: Date): Date {
 
 // ─── Main Analytics Function ──────────────────────────────────────────────────
 
-export async function computeAnalytics(playerId: string): Promise<AnalyticsResult> {
+export async function computeAnalytics(
+  userId: string,
+  playerId: string
+): Promise<AnalyticsResult> {
   const now = new Date();
   const day84Ago = new Date(now);
   day84Ago.setUTCDate(day84Ago.getUTCDate() - 84);
 
   // ── Fetch daily stats (last 84 days) ──────────────────────────────────────
   const dailyStats = await prisma.playerDailyStat.findMany({
-    where: { playerId, date: { gte: day84Ago } },
+    where: { userId, playerId, date: { gte: day84Ago } },
     orderBy: { date: "asc" },
   });
 
   // ── Fetch hourly stats ─────────────────────────────────────────────────────
   const hourlyStats = await prisma.playerHourlyStat.findMany({
-    where: { playerId },
+    where: { userId, playerId },
     orderBy: { hour: "asc" },
   });
 
@@ -85,7 +88,7 @@ export async function computeAnalytics(playerId: string): Promise<AnalyticsResul
 
   // Add current open session time to last24h, hourly, and daily
   const openSession = await prisma.session.findFirst({
-    where: { playerId, leftAt: null },
+    where: { userId, playerId, leftAt: null },
     orderBy: { joinedAt: "desc" },
   });
   if (openSession) {
@@ -99,7 +102,7 @@ export async function computeAnalytics(playerId: string): Promise<AnalyticsResul
       if (existingHour) {
         existingHour.totalTimeSec += seconds;
       } else {
-        hourlyStats.push({ id: -1, playerId, hour, totalTimeSec: seconds });
+        hourlyStats.push({ id: -1, userId, playerId, hour, totalTimeSec: seconds });
       }
     }
 
@@ -109,7 +112,14 @@ export async function computeAnalytics(playerId: string): Promise<AnalyticsResul
     if (existingDaily) {
       existingDaily.totalTimeSec += elapsed;
     } else {
-      dailyStats.push({ id: -1, playerId, date: today, totalTimeSec: elapsed, sessionsCount: 1 });
+      dailyStats.push({
+        id: -1,
+        userId,
+        playerId,
+        date: today,
+        totalTimeSec: elapsed,
+        sessionsCount: 1,
+      });
     }
   }
 
@@ -123,7 +133,7 @@ export async function computeAnalytics(playerId: string): Promise<AnalyticsResul
   const avgSessionLength = totalSessions > 0 ? Math.round(totalTime / totalSessions) : 0;
 
   // ── Forecast (recency-weighted) ────────────────────────────────────────────
-  const forecast = await computeForecast(playerId, now);
+  const forecast = await computeForecast(userId, playerId, now);
 
   // ── Format outputs ─────────────────────────────────────────────────────────
   const daily: DailyPoint[] = dailyStats.map((s) => ({
@@ -149,13 +159,18 @@ export async function computeAnalytics(playerId: string): Promise<AnalyticsResul
 // ─── Recency-Weighted Forecast ─────────────────────────────────────────────────
 // weight = e^(-daysAgo / 7) per session, split across its hours
 
-async function computeForecast(playerId: string, now: Date): Promise<ForecastPoint[]> {
+async function computeForecast(
+  userId: string,
+  playerId: string,
+  now: Date
+): Promise<ForecastPoint[]> {
   // Look at sessions in last 84 days
   const cutoff = new Date(now);
   cutoff.setUTCDate(cutoff.getUTCDate() - 84);
 
   const sessions = await prisma.session.findMany({
     where: {
+      userId,
       playerId,
       joinedAt: { gte: cutoff },
       leftAt: { not: null },

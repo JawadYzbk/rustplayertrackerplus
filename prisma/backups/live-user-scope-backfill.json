@@ -1,0 +1,309 @@
+{
+  "exportedAt": "2026-04-27T19:57:40.947Z",
+  "targetUserId": "user_3CxFSNe2pTYur3LY0lieAcsv2s5",
+  "counts": {
+    "servers": 1,
+    "players": 6,
+    "sessions": 9,
+    "dailyStats": 5,
+    "hourlyStats": 22
+  },
+  "data": {
+    "servers": [
+      {
+        "id": "14154301",
+        "name": "EU RENEGADE 2x Monthly | Solo Duo | 50% Upkeep | No BP Wipe |",
+        "createdAt": "2026-04-27T09:50:45.028Z"
+      }
+    ],
+    "players": [
+      {
+        "id": "1164317622",
+        "name": "CODY",
+        "serverId": "14154301",
+        "firstSeen": "2026-04-27T09:50:54.172Z",
+        "lastSeen": "2026-04-27T15:47:56.586Z"
+      },
+      {
+        "id": "1194921829",
+        "name": "ABOOOD +_+",
+        "serverId": "14154301",
+        "firstSeen": "2026-04-27T10:05:48.183Z",
+        "lastSeen": "2026-04-27T16:57:24.968Z"
+      },
+      {
+        "id": "993886672",
+        "name": "AboYzbk",
+        "serverId": "14154301",
+        "firstSeen": "2026-04-27T10:43:56.514Z",
+        "lastSeen": "2026-04-27T16:45:24.758Z"
+      },
+      {
+        "id": "1188226269",
+        "name": "zabagos",
+        "serverId": "14154301",
+        "firstSeen": "2026-04-27T14:40:15.048Z",
+        "lastSeen": "2026-04-27T16:38:50.478Z"
+      },
+      {
+        "id": "amanut",
+        "name": "Unknown Player amanut",
+        "serverId": "14154301",
+        "firstSeen": "2026-04-27T14:47:28.906Z",
+        "lastSeen": "2026-04-27T14:47:28.906Z"
+      },
+      {
+        "id": "1189958353",
+        "name": "Богдан 404'",
+        "serverId": "14154301",
+        "firstSeen": "2026-04-27T16:10:03.945Z",
+        "lastSeen": "2026-04-27T16:46:24.773Z"
+      }
+    ],
+    "sessions": [
+      {
+        "id": 1,
+        "playerId": "1164317622",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T09:28:27.273Z",
+        "leftAt": "2026-04-27T10:57:21.162Z",
+        "durationSec": 5333
+      },
+      {
+        "id": 2,
+        "playerId": "1194921829",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T10:02:57.120Z",
+        "leftAt": "2026-04-27T11:20:40.738Z",
+        "durationSec": 4663
+      },
+      {
+        "id": 3,
+        "playerId": "993886672",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T10:28:31.558Z",
+        "leftAt": "2026-04-27T14:46:56.923Z",
+        "durationSec": 15505
+      },
+      {
+        "id": 4,
+        "playerId": "1164317622",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T11:03:17.822Z",
+        "leftAt": "2026-04-27T15:48:56.320Z",
+        "durationSec": 17138
+      },
+      {
+        "id": 5,
+        "playerId": "1194921829",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T14:00:57.914Z",
+        "leftAt": "2026-04-27T15:16:56.197Z",
+        "durationSec": 4558
+      },
+      {
+        "id": 6,
+        "playerId": "993886672",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T14:48:07.870Z",
+        "leftAt": "2026-04-27T16:46:24.773Z",
+        "durationSec": 7096
+      },
+      {
+        "id": 7,
+        "playerId": "1194921829",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T15:17:20.020Z",
+        "leftAt": null,
+        "durationSec": null
+      },
+      {
+        "id": 8,
+        "playerId": "1189958353",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T14:49:41.378Z",
+        "leftAt": "2026-04-27T16:47:24.778Z",
+        "durationSec": 7063
+      },
+      {
+        "id": 9,
+        "playerId": "1188226269",
+        "serverId": "14154301",
+        "joinedAt": "2026-04-27T16:30:14.547Z",
+        "leftAt": "2026-04-27T16:39:50.436Z",
+        "durationSec": 575
+      }
+    ],
+    "dailyStats": [
+      {
+        "id": 1,
+        "playerId": "1164317622",
+        "date": "2026-04-26T21:00:00.000Z",
+        "totalTimeSec": 22471,
+        "sessionsCount": 2
+      },
+      {
+        "id": 2,
+        "playerId": "1194921829",
+        "date": "2026-04-26T21:00:00.000Z",
+        "totalTimeSec": 9221,
+        "sessionsCount": 2
+      },
+      {
+        "id": 3,
+        "playerId": "993886672",
+        "date": "2026-04-26T21:00:00.000Z",
+        "totalTimeSec": 22601,
+        "sessionsCount": 2
+      },
+      {
+        "id": 6,
+        "playerId": "1188226269",
+        "date": "2026-04-26T21:00:00.000Z",
+        "totalTimeSec": 575,
+        "sessionsCount": 1
+      },
+      {
+        "id": 8,
+        "playerId": "1189958353",
+        "date": "2026-04-26T21:00:00.000Z",
+        "totalTimeSec": 7063,
+        "sessionsCount": 1
+      }
+    ],
+    "hourlyStats": [
+      {
+        "id": 1,
+        "playerId": "1164317622",
+        "hour": 12,
+        "totalTimeSec": 1893
+      },
+      {
+        "id": 2,
+        "playerId": "1164317622",
+        "hour": 13,
+        "totalTimeSec": 3441
+      },
+      {
+        "id": 3,
+        "playerId": "1194921829",
+        "hour": 13,
+        "totalTimeSec": 3423
+      },
+      {
+        "id": 4,
+        "playerId": "1194921829",
+        "hour": 14,
+        "totalTimeSec": 1241
+      },
+      {
+        "id": 5,
+        "playerId": "993886672",
+        "hour": 13,
+        "totalTimeSec": 1888
+      },
+      {
+        "id": 6,
+        "playerId": "993886672",
+        "hour": 14,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 7,
+        "playerId": "993886672",
+        "hour": 15,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 8,
+        "playerId": "993886672",
+        "hour": 16,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 9,
+        "playerId": "993886672",
+        "hour": 17,
+        "totalTimeSec": 3529
+      },
+      {
+        "id": 10,
+        "playerId": "1194921829",
+        "hour": 17,
+        "totalTimeSec": 3542
+      },
+      {
+        "id": 11,
+        "playerId": "1194921829",
+        "hour": 18,
+        "totalTimeSec": 1016
+      },
+      {
+        "id": 12,
+        "playerId": "1164317622",
+        "hour": 14,
+        "totalTimeSec": 3402
+      },
+      {
+        "id": 13,
+        "playerId": "1164317622",
+        "hour": 15,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 14,
+        "playerId": "1164317622",
+        "hour": 16,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 15,
+        "playerId": "1164317622",
+        "hour": 17,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 16,
+        "playerId": "1164317622",
+        "hour": 18,
+        "totalTimeSec": 2936
+      },
+      {
+        "id": 17,
+        "playerId": "1188226269",
+        "hour": 19,
+        "totalTimeSec": 576
+      },
+      {
+        "id": 19,
+        "playerId": "993886672",
+        "hour": 18,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 20,
+        "playerId": "993886672",
+        "hour": 19,
+        "totalTimeSec": 2785
+      },
+      {
+        "id": 21,
+        "playerId": "1189958353",
+        "hour": 17,
+        "totalTimeSec": 619
+      },
+      {
+        "id": 22,
+        "playerId": "1189958353",
+        "hour": 18,
+        "totalTimeSec": 3600
+      },
+      {
+        "id": 23,
+        "playerId": "1189958353",
+        "hour": 19,
+        "totalTimeSec": 2845
+      }
+    ]
+  }
+}
