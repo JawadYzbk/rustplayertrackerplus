@@ -1,36 +1,244 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rust Player Tracker Plus
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149eca?logo=react)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-7-2d3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?logo=postgresql)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/license-Private-lightgrey)](#license)
+
+Rust Player Tracker Plus is a full-stack analytics platform for tracking player behavior across Rust servers. It combines BattleMetrics data, a PostgreSQL database, and a modern Next.js dashboard to help server owners monitor live activity, build player histories, and surface engagement insights.
+
+## Overview
+
+This project is designed for server operators who want more than a basic online player list. It tracks servers, stores historical session data, and presents analytics that help answer questions like:
+
+- Which players are most active?
+- When is a player usually online?
+- How long do sessions last on average?
+- Which servers are generating the most tracked activity?
+
+The app includes a dashboard, server management tools, live player lookup, session history, and per-player analytics with charts and forecasts.
+
+## Key Features
+
+- Track Rust servers by BattleMetrics server ID
+- Auto-fetch server and player names from the BattleMetrics API
+- View live online players for each tracked server
+- Add live players to your tracked player list with one click
+- Store historical join and leave sessions in PostgreSQL
+- Monitor player activity across dashboard, players, sessions, and detail pages
+- Generate player analytics such as:
+  - last 24h, 7d, and 12-week activity summaries
+  - hourly activity heatmaps
+  - peak and dead hours
+  - average session length
+  - recency-weighted online probability forecast
+- Run a background polling worker for continuous updates
+
+## Tech Stack
+
+- Frontend: Next.js 16, React 19, TypeScript
+- UI: Tailwind CSS 4, shadcn/ui, Lucide React, Sonner
+- Backend: Next.js Route Handlers
+- Database: PostgreSQL
+- ORM: Prisma 7 with `@prisma/adapter-pg`
+- Charts: Recharts
+- External Data Source: BattleMetrics API
+- Containerization: Docker
+
+## Product Areas
+
+### Dashboard
+
+- High-level overview of tracked servers, players, sessions, and worker health
+- Quick links into the main operational views
+
+### Servers
+
+- Add servers by BattleMetrics ID
+- View tracked player and session counts per server
+- Inspect live players currently online
+- Track live players directly from the modal
+
+### Players
+
+- Search and browse tracked players
+- See online/offline status based on recent activity
+- Open an individual player intelligence page
+
+### Player Analytics
+
+- Activity summaries for recent time windows
+- Heatmap-style hourly usage patterns
+- Recent playtime charts
+- Forecast and trend visualization
+- Session log for the selected player
+
+### Sessions
+
+- Historical session records
+- Active sessions and completed durations
+- Filtering by player ID
+
+## How It Works
+
+1. Servers are added using their BattleMetrics server ID.
+2. The app fetches metadata from BattleMetrics and stores tracked servers locally.
+3. Live players can be discovered from a server and added to the internal player tracker.
+4. A background worker polls BattleMetrics every 60 seconds.
+5. When tracked players come online or go offline, sessions are opened and closed in the database.
+6. Daily and hourly aggregates are updated when sessions end.
+7. Analytics are computed from pre-aggregated data for fast player insights.
+
+## Project Structure
+
+```text
+.
+|-- prisma/                 # Prisma schema and migrations
+|-- public/                 # Static assets
+|-- src/
+|   |-- app/                # App router pages and API routes
+|   |-- components/         # Shared UI components
+|   `-- lib/                # Prisma, analytics, worker, utilities
+|-- server.ts               # Custom Next.js server + worker bootstrap
+|-- Dockerfile              # Containerized runtime
+`-- README.md
+```
+
+## Requirements
+
+- Node.js 20+
+- npm 10+
+- PostgreSQL database
+- Optional BattleMetrics API token for authenticated API access
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME"
+BATTLEMETRICS_TOKEN=""
+PORT=3000
+RENDER_EXTERNAL_URL=""
+```
+
+### Variable Notes
+
+- `DATABASE_URL`: Required. PostgreSQL connection string used by Prisma.
+- `BATTLEMETRICS_TOKEN`: Optional but recommended for authenticated BattleMetrics requests.
+- `PORT`: Optional runtime port. Defaults to `3000`.
+- `RENDER_EXTERNAL_URL`: Optional production self-ping URL used by the worker on Render.
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Generate Prisma Client
+
+```bash
+npx prisma generate
+```
+
+### 3. Prepare the Database
+
+For local development:
+
+```bash
+npx prisma db push
+```
+
+If you use migrations in your workflow:
+
+```bash
+npx prisma migrate dev
+```
+
+### 4. Start the App
+
+Standard Next.js development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Background Worker
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This repository includes a polling worker that tracks live player state and converts it into stored sessions and aggregated analytics.
 
-## Learn More
+The worker is started by the custom server in `server.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+To run the app together with the worker locally:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npx tsx server.ts
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Important:
 
-## Deploy on Vercel
+- `npm run dev` starts the standard Next.js dev server from `package.json`
+- `npx tsx server.ts` starts the custom server and background worker together
+- If you want live polling and automatic session updates during development, use the custom server command
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Available Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+```
+
+## API Overview
+
+Main application routes include:
+
+- `GET /api/servers` - list tracked servers
+- `POST /api/servers` - add a server by BattleMetrics ID
+- `DELETE /api/servers/:id` - remove a server and related data
+- `GET /api/servers/:id/live-players` - fetch current live players from BattleMetrics
+- `GET /api/players` - list tracked players with pagination and search
+- `POST /api/players/create` - add a player to tracking
+- `GET /api/players/:id/analytics` - fetch player analytics and metadata
+- `GET /api/sessions` - list historical sessions with filters
+
+## Docker
+
+The project includes a `Dockerfile` that:
+
+- installs dependencies
+- generates the Prisma client
+- builds the Next.js app
+- pushes the schema with `prisma db push`
+- starts the custom server with the polling worker
+
+Example:
+
+```bash
+docker build -t rust-player-tracker-plus .
+docker run --env-file .env -p 3000:3000 rust-player-tracker-plus
+```
+
+## Deployment Notes
+
+- The custom server is intended for deployments where the web app and polling worker run in the same process.
+- Production polling supports an optional self-ping strategy through `RENDER_EXTERNAL_URL`.
+- Ensure your deployment target allows outbound requests to the BattleMetrics API and inbound traffic on the configured `PORT`.
+
+## Suggested Improvements
+
+- Add authentication and role-based access control
+- Introduce explicit worker scripts in `package.json`
+- Add automated tests for API routes and analytics calculations
+- Add export/reporting features for server administrators
+- Add richer observability and alerting for worker failures
+
+## License
+
+This repository is currently marked as private. Update this section with your preferred license before publishing publicly.
