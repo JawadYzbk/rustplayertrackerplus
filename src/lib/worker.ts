@@ -48,6 +48,10 @@ interface BMServerResponse {
   included?: BMIncluded[];
 }
 
+function isBMSessionIncluded(include: BMIncluded): include is BMSessionIncluded {
+  return include.type === "session" && "attributes" in include;
+}
+
 // ─── Main Poll Loop ───────────────────────────────────────────────────────────
 
 export function startWorker(): void {
@@ -107,7 +111,7 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
     const sessionMap = new Map<string, Date>();
     for (const inc of included) {
       if (
-        inc.type === "session" &&
+        isBMSessionIncluded(inc) &&
         inc.attributes?.start &&
         inc.relationships?.player?.data?.id
       ) {

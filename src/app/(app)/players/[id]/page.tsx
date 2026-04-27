@@ -410,7 +410,13 @@ export default function PlayerAnalyticsPage({
                         borderColor: "var(--border)",
                         borderRadius: "8px",
                       }}
-                      formatter={(value: number) => [`${value}%`, "Probability"]}
+                      formatter={(value) => {
+                        const displayValue = Array.isArray(value)
+                          ? value[0]
+                          : value;
+
+                        return [`${displayValue ?? 0}%`, "Probability"];
+                      }}
                     />
                     <Line
                       type="monotone"

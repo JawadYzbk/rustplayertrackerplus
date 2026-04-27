@@ -1,7 +1,7 @@
-import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
+import AccountPanel from "@/components/AccountPanel";
 
 export default async function AppLayout({
   children,
@@ -32,7 +32,7 @@ export default async function AppLayout({
             <span className="rounded-full border px-2.5 py-1 text-xs text-muted-foreground">
               Authorized
             </span>
-            <UserButton afterSignOutUrl="/" />
+            <AccountPanel />
           </div>
         </header>
 
