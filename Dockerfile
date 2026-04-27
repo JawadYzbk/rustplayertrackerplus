@@ -28,17 +28,17 @@ ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Since we use a custom server (server.ts), we must copy the full .next build
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
 
-# We need tsx to run the custom server in production
+# We need tsx, full node_modules, and source files to run the custom server
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/server.ts ./server.ts
-COPY --from=builder /app/src/lib/worker.ts ./src/lib/worker.ts
-
-# Ensure Prisma client is available
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
