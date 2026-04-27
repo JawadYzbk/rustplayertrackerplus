@@ -25,7 +25,7 @@ app.prepare().then(() => {
   createServer((req, res) => {
     const parsedUrl = parse(req.url ?? "/", true);
     void handle(req, res, parsedUrl);
-  }).listen(port, () => {
-    console.log(`[Server] Ready on http://localhost:${port} (${dev ? "dev" : "prod"})`);
+  }).listen(port, "0.0.0.0", () => {
+    console.log(`[Server] Ready on http://0.0.0.0:${port} (${dev ? "dev" : "prod"})`);
   });
 });
