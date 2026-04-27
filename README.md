@@ -81,6 +81,34 @@ The app includes a dashboard, server management tools, live player lookup, sessi
 - Active sessions and completed durations
 - Filtering by player ID
 
+
+### Screenshots:
+LandingPage
+<img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/611cac93-a534-4d8a-a64d-53eee47ff7a7" />
+
+Dashboard
+<img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/3c0a01ac-3ee2-4b0e-aced-420ab291723a" />
+
+- Servers List (per User)
+<img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/0e626d5e-1a25-4d65-9414-5c73cf9e609d" />
+Online Players list per server (searchable+ sortable)
+<img width="695" height="1130" alt="image" src="https://github.com/user-attachments/assets/f2cab2cf-5c74-4a11-b632-96edb1b62022" />
+
+
+Tracked Players List 
+<img width="1915" height="975" alt="image" src="https://github.com/user-attachments/assets/ab7c9954-baf9-421c-a69a-e06c18770ea5" />
+
+### Player Page:
+player insights page
+<img width="972" height="643" alt="image" src="https://github.com/user-attachments/assets/14d6df40-b04f-45bc-ad5d-8ae9c58cba7c" />
+forecast and Trends
+<img width="1360" height="469" alt="image" src="https://github.com/user-attachments/assets/5d9a7ef6-e9e7-4e5f-81db-e63ff8dc5113" />
+Session log 
+<img width="1323" height="421" alt="image" src="https://github.com/user-attachments/assets/167f5fbf-9a0a-4f40-8711-d406b74f5b9a" />
+
+### Sessions Page:
+<img width="1066" height="681" alt="image" src="https://github.com/user-attachments/assets/e5d79c68-f63a-4885-bd7c-fcd12b87e657" />
+
 ## How It Works
 
 1. Servers are added using their BattleMetrics server ID.
