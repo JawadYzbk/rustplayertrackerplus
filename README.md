@@ -6,7 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/license-Private-lightgrey)](#license)
 
-Rust Player Tracker Plus is a full-stack analytics platform for tracking player behavior across Rust servers. It combines BattleMetrics data, a PostgreSQL database, and a modern Next.js dashboard to help server owners monitor live activity, build player histories, and surface engagement insights.
+Rust Player Tracker Plus is a full-stack analytics platform for tracking player behavior across Rust servers. It combines BattleMetrics data, a PostgreSQL database, and a modern Next.js dashboard to help server players monitor live activity, build player histories, and surface engagement insights.
 <img width="1254" height="1254" alt="image" src="https://github.com/user-attachments/assets/82c7418e-84cb-499a-af6d-12c34fa3ed90" />
 
 ## Overview
