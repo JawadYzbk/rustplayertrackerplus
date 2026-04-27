@@ -87,7 +87,8 @@ LandingPage
 <img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/611cac93-a534-4d8a-a64d-53eee47ff7a7" />
 
 Dashboard
-<img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/3c0a01ac-3ee2-4b0e-aced-420ab291723a" />
+<img width="1908" height="969" alt="image" src="https://github.com/user-attachments/assets/2e1ab2c8-2f37-444f-9a2c-c798b06824ba" />
+
 
 - Servers List (per User)
 <img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/0e626d5e-1a25-4d65-9414-5c73cf9e609d" />
