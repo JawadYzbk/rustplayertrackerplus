@@ -20,8 +20,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Loader2, ChevronRight } from "lucide-react";
+import { Users, Search, Loader2, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
+
+type PlayerSortKey = "name" | "server" | "lastSeen" | "firstSeen" | "status";
+type SortDir = "asc" | "desc";
 
 interface Player {
   id: string;
@@ -39,6 +43,8 @@ export default function PlayersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [sortKey, setSortKey] = useState<PlayerSortKey>("lastSeen");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const [servers, setServers] = useState<{id: string, name: string}[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -88,6 +94,37 @@ export default function PlayersPage() {
       setAdding(false);
     }
   };
+
+  const sortedPlayers = useMemo(() => {
+    return [...players].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "name") cmp = a.name.localeCompare(b.name);
+      else if (sortKey === "server") cmp = a.server.name.localeCompare(b.server.name);
+      else if (sortKey === "lastSeen") cmp = new Date(a.lastSeen).getTime() - new Date(b.lastSeen).getTime();
+      else if (sortKey === "firstSeen") cmp = new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime();
+      else if (sortKey === "status") cmp = (a.isOnline ? 1 : 0) - (b.isOnline ? 1 : 0);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [players, sortKey, sortDir]);
+
+  const toggleSort = (key: PlayerSortKey) => {
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("desc"); }
+  };
+
+  const SortableHead = ({ label, k }: { label: string; k: PlayerSortKey }) => (
+    <TableHead
+      className="cursor-pointer select-none hover:text-foreground transition-colors"
+      onClick={() => toggleSort(k)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortKey === k
+          ? sortDir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+          : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+      </span>
+    </TableHead>
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -178,7 +215,7 @@ export default function PlayersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  players.map((player) => (
+                  sortedPlayers.map((player) => (
                     <TableRow key={player.id}>
                       <TableCell>
                         {player.isOnline ? (

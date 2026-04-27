@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import {
@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, Server as ServerIcon, Plus, Loader2, Clock } from "lucide-react";
+import { Trash2, Server as ServerIcon, Plus, Loader2, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 
 interface Server {
   id: string;
@@ -28,6 +28,15 @@ interface Server {
   createdAt: string;
   _count: { players: number; sessions: number };
 }
+
+interface LivePlayer {
+  id: string;
+  name: string;
+  sessionStart: string | null;
+}
+
+type SortKey = "playtime" | "alpha";
+type SortDir = "asc" | "desc";
 
 function formatDuration(ms: number) {
   if (ms < 0) return "Just Joined";
@@ -47,9 +56,14 @@ export default function ServersPage() {
 
   // Modal state
   const [liveModalServer, setLiveModalServer] = useState<Server | null>(null);
-  const [livePlayers, setLivePlayers] = useState<any[]>([]);
+  const [livePlayers, setLivePlayers] = useState<LivePlayer[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [addingPlayerId, setAddingPlayerId] = useState<string | null>(null);
+
+  // Filter & sort state
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("playtime");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     fetchServers();
@@ -69,7 +83,6 @@ export default function ServersPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newId) return;
-
     setAdding(true);
     try {
       await axios.post("/api/servers", { id: newId });
@@ -86,6 +99,10 @@ export default function ServersPage() {
   const handleViewLive = async (server: Server) => {
     setLiveModalServer(server);
     setLiveLoading(true);
+    setSearch("");
+    setSortKey("playtime");
+    setSortDir("desc");
+    setLivePlayers([]);
     try {
       const { data } = await axios.get(`/api/servers/${server.id}/live-players`);
       setLivePlayers(data);
@@ -112,7 +129,6 @@ export default function ServersPage() {
     if (!confirm("Are you sure you want to delete this server? All related players and sessions will be permanently deleted.")) {
       return;
     }
-    
     try {
       await axios.delete(`/api/servers/${id}`);
       toast.success("Server deleted");
@@ -120,6 +136,42 @@ export default function ServersPage() {
     } catch (error) {
       toast.error("Failed to delete server");
     }
+  };
+
+  // Sorted & filtered live players
+  const displayedPlayers = useMemo(() => {
+    const now = Date.now();
+    let filtered = livePlayers.filter(p =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.id.includes(search)
+    );
+
+    filtered.sort((a, b) => {
+      if (sortKey === "alpha") {
+        const cmp = a.name.localeCompare(b.name);
+        return sortDir === "asc" ? cmp : -cmp;
+      }
+      // playtime: no sessionStart = 0ms elapsed
+      const aMs = a.sessionStart ? now - new Date(a.sessionStart).getTime() : 0;
+      const bMs = b.sessionStart ? now - new Date(b.sessionStart).getTime() : 0;
+      return sortDir === "desc" ? bMs - aMs : aMs - bMs;
+    });
+
+    return filtered;
+  }, [livePlayers, search, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(key === "playtime" ? "desc" : "asc");
+    }
+  };
+
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) return <ArrowUpDown className="w-3 h-3 opacity-40" />;
+    return sortDir === "desc" ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />;
   };
 
   return (
@@ -220,45 +272,89 @@ export default function ServersPage() {
 
       {/* Live Players Modal */}
       {liveModalServer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card w-full max-w-2xl rounded-xl shadow-xl border overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-4 border-b flex items-center justify-between">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setLiveModalServer(null)}
+        >
+          <div
+            className="bg-card w-full max-w-2xl rounded-xl shadow-xl border overflow-hidden flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-4 border-b flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-bold text-lg">Live Players: {liveModalServer.name}</h3>
-                <p className="text-xs text-muted-foreground">{livePlayers.length} online</p>
+                <h3 className="font-bold text-lg">{liveModalServer.name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {liveLoading ? "Loading..." : `${livePlayers.length} online · ${displayedPlayers.length} shown`}
+                </p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setLiveModalServer(null)}>
                 Close
               </Button>
             </div>
+
+            {/* Search & Sort toolbar */}
+            {!liveLoading && livePlayers.length > 0 && (
+              <div className="p-3 border-b flex items-center gap-2 shrink-0 bg-secondary/20">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    className="pl-8 h-8 text-sm"
+                    placeholder="Filter by name or ID…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  variant={sortKey === "playtime" ? "secondary" : "ghost"}
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => toggleSort("playtime")}
+                >
+                  <Clock className="w-3 h-3" /> Playtime <SortIcon k="playtime" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={sortKey === "alpha" ? "secondary" : "ghost"}
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => toggleSort("alpha")}
+                >
+                  A–Z <SortIcon k="alpha" />
+                </Button>
+              </div>
+            )}
+
+            {/* Player list */}
             <div className="p-4 overflow-y-auto flex-1">
               {liveLoading ? (
                 <div className="py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
-              ) : livePlayers.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No players currently online.</p>
+              ) : displayedPlayers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  {livePlayers.length === 0 ? "No players currently online." : "No players match your filter."}
+                </p>
               ) : (
-                <div className="space-y-2">
-                  {livePlayers.map(p => (
-                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border bg-secondary/30">
-                      <div className="flex-1">
+                <div className="space-y-1.5">
+                  {displayedPlayers.map(p => (
+                    <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                      <div className="flex-1 min-w-0 mr-3">
                         <p className="font-medium text-sm flex items-center gap-2">
                           {p.name}
                           {p.sessionStart && (
-                            <span className="text-xs text-muted-foreground flex items-center font-normal">
+                            <span className="text-xs text-muted-foreground flex items-center font-normal shrink-0">
                               <Clock className="w-3 h-3 mr-1" />
                               {formatDuration(Date.now() - new Date(p.sessionStart).getTime())}
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{p.id}</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{p.id}</p>
                       </div>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="secondary"
                         disabled={addingPlayerId === p.id}
-                        onClick={() => handleTrackPlayer(p.id, p.name, liveModalServer.id, p.sessionStart)}
+                        onClick={() => handleTrackPlayer(p.id, p.name, liveModalServer.id, p.sessionStart ?? undefined)}
                       >
-                        {addingPlayerId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to Tracker"}
+                        {addingPlayerId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Track"}
                       </Button>
                     </div>
                   ))}
