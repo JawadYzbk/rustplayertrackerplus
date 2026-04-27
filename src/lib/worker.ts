@@ -32,6 +32,19 @@ export function startWorker(): void {
   console.log("[Worker] Starting BattleMetrics poll worker…");
   void runPoll(); // immediate first run
   setInterval(() => void runPoll(), POLL_INTERVAL_MS);
+
+  // Keep Render free tier awake by self-pinging every 10 minutes
+  if (process.env.NODE_ENV === "production" && process.env.RENDER_EXTERNAL_URL) {
+    const pingUrl = process.env.RENDER_EXTERNAL_URL;
+    setInterval(async () => {
+      try {
+        await axios.get(`${pingUrl}/api/servers`, { timeout: 10_000 });
+        console.log("[Worker] Self-ping OK");
+      } catch {
+        // silently ignore
+      }
+    }, 10 * 60 * 1000);
+  }
 }
 
 async function runPoll(): Promise<void> {
