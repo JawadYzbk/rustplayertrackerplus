@@ -1,0 +1,71 @@
+import { prisma } from "@/lib/prisma";
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import axios from "axios";
+
+const CreatePlayerSchema = z.object({
+  id: z.string().min(1, "Player ID required"),
+  serverId: z.string().min(1, "Server ID required"),
+  name: z.string().optional(),
+  sessionStart: z.string().optional(),
+});
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const parsed = CreatePlayerSchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { id, serverId, name, sessionStart } = parsed.data;
+
+  const existing = await prisma.player.findUnique({ where: { id } });
+  if (existing) {
+    return Response.json({ error: "Player is already tracked" }, { status: 409 });
+  }
+
+  // Ensure server exists
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server) {
+    return Response.json({ error: "Server does not exist in tracker" }, { status: 400 });
+  }
+
+  let playerName = name || `Unknown Player ${id}`;
+  if (!name) {
+    try {
+      const headers: Record<string, string> = {};
+      if (process.env.BATTLEMETRICS_TOKEN) {
+        headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
+      }
+      const { data } = await axios.get(`https://api.battlemetrics.com/players/${id}`, { headers });
+      if (data?.data?.attributes?.name) {
+        playerName = data.data.attributes.name;
+      }
+    } catch (err) {
+      console.error(`Failed to fetch player name for ${id}`, err);
+    }
+  }
+
+  const player = await prisma.player.create({
+    data: {
+      id,
+      name: playerName,
+      serverId,
+      firstSeen: new Date(),
+      lastSeen: new Date(),
+    },
+  });
+
+  if (sessionStart) {
+    const openSession = await prisma.session.findFirst({
+      where: { playerId: id, serverId, leftAt: null },
+    });
+    if (!openSession) {
+      await prisma.session.create({
+        data: { playerId: id, serverId, joinedAt: new Date(sessionStart) },
+      });
+    }
+  }
+
+  return Response.json(player, { status: 201 });
+}

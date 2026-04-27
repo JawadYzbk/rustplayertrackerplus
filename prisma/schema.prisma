@@ -1,0 +1,74 @@
+// Rust Player Intelligence Platform — Prisma Schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Server {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  players  Player[]
+  sessions Session[]
+}
+
+model Player {
+  id       String   @id
+  name     String
+  serverId String
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime
+
+  server   Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  sessions Session[]
+  dailyStats PlayerDailyStat[]
+  hourlyStats PlayerHourlyStat[]
+
+  @@index([serverId])
+}
+
+model Session {
+  id          Int       @id @default(autoincrement())
+  playerId    String
+  serverId    String
+  joinedAt    DateTime
+  leftAt      DateTime?
+  durationSec Int?
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, joinedAt])
+  @@index([serverId])
+}
+
+model PlayerDailyStat {
+  id            Int      @id @default(autoincrement())
+  playerId      String
+  date          DateTime @db.Date
+  totalTimeSec  Int      @default(0)
+  sessionsCount Int      @default(0)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, date])
+  @@index([playerId])
+}
+
+model PlayerHourlyStat {
+  id           Int    @id @default(autoincrement())
+  playerId     String
+  hour         Int    // 0-23
+  totalTimeSec Int    @default(0)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, hour])
+  @@index([playerId])
+}
