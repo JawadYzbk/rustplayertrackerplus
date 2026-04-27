@@ -102,7 +102,7 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
 
     // Find tracked players in DB
     const trackedPlayers = await prisma.player.findMany({
-      where: { userId, serverId },
+      where: { userId, serverId, isTracking: true },
       select: { id: true },
     });
     const trackedIds = new Set(trackedPlayers.map((p) => p.id));

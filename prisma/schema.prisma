@@ -41,6 +41,7 @@ model Player {
   serverId  String
   firstSeen DateTime @default(now())
   lastSeen  DateTime
+  isTracking Boolean  @default(true)
 
   user        AppUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
   server      Server            @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)

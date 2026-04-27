@@ -63,12 +63,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    const trackedPlayers = await prisma.player.findMany({
+      where: { userId, serverId: id },
+      select: { id: true, isTracking: true },
+    });
+    const trackedMap = new Map(trackedPlayers.map((p) => [p.id, p.isTracking]));
+
     const players = included
       .filter((inc) => inc.type === "player")
       .map((p) => ({
         id: p.id,
         name: p.attributes?.name || "Unknown",
         sessionStart: sessionMap.get(p.id) || null,
+        isTracked: trackedMap.get(p.id) ?? false,
       }));
 
     return Response.json(players);

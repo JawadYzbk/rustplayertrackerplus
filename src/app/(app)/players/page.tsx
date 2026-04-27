@@ -28,6 +28,7 @@ import {
   Loader2,
   Search,
   Users,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -97,6 +98,7 @@ export default function PlayersPage() {
   const [newPlayerId, setNewPlayerId] = useState("");
   const [newPlayerServer, setNewPlayerServer] = useState("");
   const [adding, setAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     axios.get("/api/servers").then((res) => setServers(res.data));
@@ -142,6 +144,21 @@ export default function PlayersPage() {
       );
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleStopTracking = async (playerId: string) => {
+    if (!confirm("Are you sure you want to stop tracking this player? Historical data will be preserved.")) return;
+    
+    setDeletingId(playerId);
+    try {
+      await axios.delete(`/api/players/${playerId}`);
+      toast.success("Stopped tracking player");
+      fetchPlayers();
+    } catch {
+      toast.error("Failed to stop tracking player");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -309,11 +326,26 @@ export default function PlayersPage() {
                         {new Date(player.firstSeen).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/players/${player.id}`}>
-                          <Button variant="ghost" size="sm" className="gap-1">
-                            Insights <ChevronRight className="h-4 w-4" />
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/players/${player.id}`}>
+                            <Button variant="ghost" size="sm" className="gap-1">
+                              Insights <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleStopTracking(player.id)}
+                            disabled={deletingId === player.id}
+                          >
+                            {deletingId === player.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
-                        </Link>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

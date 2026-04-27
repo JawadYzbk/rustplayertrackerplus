@@ -35,6 +35,13 @@ export async function POST(req: NextRequest) {
     where: { userId_id: { userId, id } },
   });
   if (existing) {
+    if (!existing.isTracking) {
+      const updated = await prisma.player.update({
+        where: { userId_id: { userId, id } },
+        data: { isTracking: true, serverId, name: name || existing.name },
+      });
+      return Response.json(updated, { status: 200 });
+    }
     return Response.json({ error: "Player is already tracked" }, { status: 409 });
   }
 

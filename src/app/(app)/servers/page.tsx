@@ -33,6 +33,7 @@ interface LivePlayer {
   id: string;
   name: string;
   sessionStart: string | null;
+  isTracked: boolean;
 }
 
 type SortKey = "playtime" | "alpha";
@@ -139,6 +140,7 @@ export default function ServersPage() {
     try {
       await axios.post("/api/players/create", { id: playerId, name, serverId, sessionStart });
       toast.success("Player added to tracker list");
+      setLivePlayers(prev => prev.map(p => p.id === playerId ? { ...p, isTracked: true } : p));
     } catch (error) {
       toast.error(
         axios.isAxiosError(error)
@@ -381,11 +383,17 @@ export default function ServersPage() {
                       </div>
                       <Button
                         size="sm"
-                        variant="secondary"
-                        disabled={addingPlayerId === p.id}
+                        variant={p.isTracked ? "ghost" : "secondary"}
+                        disabled={addingPlayerId === p.id || p.isTracked}
                         onClick={() => handleTrackPlayer(p.id, p.name, liveModalServer.id, p.sessionStart ?? undefined)}
                       >
-                        {addingPlayerId === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Track"}
+                        {addingPlayerId === p.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : p.isTracked ? (
+                          "Tracked"
+                        ) : (
+                          "Track"
+                        )}
                       </Button>
                     </div>
                   ))}

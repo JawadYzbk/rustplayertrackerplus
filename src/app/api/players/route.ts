@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
     userId: string;
     serverId?: string;
     name?: { contains: string; mode: "insensitive" };
-  } = { userId };
+    isTracking: boolean;
+  } = { userId, isTracking: true };
   if (serverId) where.serverId = serverId;
   if (search) where.name = { contains: search, mode: "insensitive" };
 
