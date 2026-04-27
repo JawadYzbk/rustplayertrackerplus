@@ -46,5 +46,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# Start the custom server
-CMD ["npx", "tsx", "server.ts"]
+# Push schema and start the custom server
+CMD sh -c "npx prisma db push --skip-generate && npx tsx server.ts"
