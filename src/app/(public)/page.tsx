@@ -19,6 +19,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Image from "next/image";
+import Logo from "@/app/Logo.png";
 
 const featureCards = [
   {
@@ -60,7 +62,7 @@ export default async function WelcomePage() {
         <header className="mb-10 flex items-center justify-between gap-4 rounded-2xl border bg-card/60 px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-lg">
-              <Sparkles className="h-5 w-5" />
+              <Image src={Logo} alt="Logo" width={36} height={36} />
             </div>
             <div>
               <p className="text-sm font-bold tracking-tight">RustTracker+</p>

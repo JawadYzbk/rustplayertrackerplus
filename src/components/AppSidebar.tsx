@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -9,9 +10,8 @@ import {
   Server,
   Users,
   Clock,
-  Zap,
 } from "lucide-react";
-
+import Logo from "@/app/Logo.png";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/servers",  label: "Servers",   icon: Server },
@@ -26,9 +26,7 @@ export default function AppSidebar() {
     <aside className="app-sidebar">
       {/* Brand */}
       <div className="flex items-center gap-3 px-2 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shrink-0">
-          <Zap size={18} />
-        </div>
+        <Image src={Logo} alt="Logo" width={36} height={36} className="rounded-xl bg-primary object-cover shadow-lg shrink-0" />
         <div className="leading-tight">
           <p className="text-sm font-bold text-foreground tracking-tight">RustTracker+</p>
           <p className="text-[10px] text-muted-foreground">Intelligence Platform</p>
