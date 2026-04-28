@@ -78,20 +78,35 @@ export async function computeAnalytics(
   const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const last7dStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const sessions = await prisma.session.findMany({
-    where: {
-      userId,
-      playerId,
-      joinedAt: { lt: now },
-      OR: [{ leftAt: null }, { leftAt: { gt: day84Ago } }],
-    },
-    select: {
-      joinedAt: true,
-      leftAt: true,
-      durationSec: true,
-    },
-    orderBy: { joinedAt: "asc" },
-  });
+  const [sessions, todaySessions] = await Promise.all([
+    prisma.session.findMany({
+      where: {
+        userId,
+        playerId,
+        joinedAt: { lt: now },
+        OR: [{ leftAt: null }, { leftAt: { gt: day84Ago } }],
+      },
+      select: {
+        joinedAt: true,
+        leftAt: true,
+        durationSec: true,
+      },
+      orderBy: { joinedAt: "asc" },
+    }),
+    prisma.session.findMany({
+      where: {
+        userId,
+        playerId,
+        joinedAt: { lt: now },
+        OR: [{ leftAt: null }, { leftAt: { gt: todayStart } }],
+      },
+      select: {
+        joinedAt: true,
+        leftAt: true,
+      },
+      orderBy: { joinedAt: "asc" },
+    }),
+  ]);
 
   // ── Fetch hourly stats ─────────────────────────────────────────────────────
   const hourlyStats = await prisma.playerHourlyStat.findMany({
@@ -106,6 +121,19 @@ export async function computeAnalytics(
   const todayHourlyBuckets = new Array<number>(24).fill(0);
   let closedSessionCount = 0;
   let closedSessionTime = 0;
+
+  for (const session of todaySessions) {
+    const sessionEnd = session.leftAt ?? now;
+    const todayRange = clampSessionRange(session.joinedAt, sessionEnd, todayStart, now);
+    if (!todayRange) {
+      continue;
+    }
+
+    const hourSplits = splitSessionAcrossHours(todayRange.start, todayRange.end);
+    for (const { hour, seconds } of hourSplits) {
+      todayHourlyBuckets[hour] += seconds;
+    }
+  }
 
   for (const session of sessions) {
     const sessionEnd = session.leftAt ?? now;
@@ -139,14 +167,6 @@ export async function computeAnalytics(
         }
 
         last12w += seconds;
-      }
-    }
-
-    const todayRange = clampSessionRange(session.joinedAt, sessionEnd, todayStart, now);
-    if (todayRange) {
-      const hourSplits = splitSessionAcrossHours(todayRange.start, todayRange.end);
-      for (const { hour, seconds } of hourSplits) {
-        todayHourlyBuckets[hour] += seconds;
       }
     }
 
