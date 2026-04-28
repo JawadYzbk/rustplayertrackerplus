@@ -7,11 +7,11 @@
 [![License](https://img.shields.io/badge/license-Private-lightgrey)](#license)
 
 Rust Player Tracker Plus is a full-stack analytics platform for tracking player behavior across Rust servers. It combines BattleMetrics data, a PostgreSQL database, and a modern Next.js dashboard to help server players monitor live activity, build player histories, and surface engagement insights.
-<img width="2059" height="764" alt="image" src="https://github.com/user-attachments/assets/73872982-3334-4b14-ba73-371e9391b4a5" />
+<img width="1356" height="473" alt="image" src="https://github.com/user-attachments/assets/7cc211d3-6766-42a9-85bf-27b5a633db4c" />
 
 ## Overview
 
-This project is designed for server operators who want more than a basic online player list. It tracks servers, stores historical session data, and presents analytics that help answer questions like:
+This project is designed for server players who want more than a basic online player list. It tracks servers, stores historical session data, and presents analytics that help answer questions like:
 
 - Which players are most active?
 - When is a player usually online?
