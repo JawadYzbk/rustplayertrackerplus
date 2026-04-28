@@ -6,7 +6,7 @@
 
 import axios from "axios";
 import { prisma } from "./prisma";
-import { splitSessionAcrossHours } from "./analytics";
+import { splitSessionAcrossDays, splitSessionAcrossHours } from "./analytics";
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -215,25 +215,25 @@ async function aggregateSession(
   leftAt: Date,
   durationSec: number
 ): Promise<void> {
-  // 1. Daily stat
-  const dateKey = new Date(
-    Date.UTC(joinedAt.getUTCFullYear(), joinedAt.getUTCMonth(), joinedAt.getUTCDate())
-  );
+  // 1. Daily stats — split session across UTC day boundaries
+  const daySplits = splitSessionAcrossDays(joinedAt, leftAt);
 
-  await prisma.playerDailyStat.upsert({
-    where: { userId_playerId_date: { userId, playerId, date: dateKey } },
-    create: {
-      userId,
-      playerId,
-      date: dateKey,
-      totalTimeSec: durationSec,
-      sessionsCount: 1,
-    },
-    update: {
-      totalTimeSec: { increment: durationSec },
-      sessionsCount: { increment: 1 },
-    },
-  });
+  for (const { date, seconds } of daySplits) {
+    await prisma.playerDailyStat.upsert({
+      where: { userId_playerId_date: { userId, playerId, date } },
+      create: {
+        userId,
+        playerId,
+        date,
+        totalTimeSec: seconds,
+        sessionsCount: 1,
+      },
+      update: {
+        totalTimeSec: { increment: seconds },
+        sessionsCount: { increment: 1 },
+      },
+    });
+  }
 
   // 2. Hourly stats — split session across UTC hours
   const splits = splitSessionAcrossHours(joinedAt, leftAt);

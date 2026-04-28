@@ -269,7 +269,7 @@ export default function PlayerAnalyticsPage({
                   Activity Heatmap (24h)
                 </CardTitle>
                 <CardDescription>
-                  Intensity based on historical hourly playtime
+                  Today&apos;s hourly activity with cross-midnight sessions split into the correct day
                 </CardDescription>
               </CardHeader>
               <CardContent>

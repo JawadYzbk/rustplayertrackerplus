@@ -1,6 +1,6 @@
 /**
  * Analytics Engine — computes summary, insights, daily/hourly data and forecast.
- * All reads use precomputed aggregation tables (no raw session scans).
+ * Uses raw session overlaps for recent windows and day-accurate charts.
  */
 
 import { prisma } from "./prisma";
@@ -49,6 +49,23 @@ function startOfDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
+function addUtcDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function clampSessionRange(start: Date, end: Date, windowStart: Date, windowEnd: Date) {
+  const clampedStart = start > windowStart ? start : windowStart;
+  const clampedEnd = end < windowEnd ? end : windowEnd;
+
+  if (clampedStart >= clampedEnd) {
+    return null;
+  }
+
+  return { start: clampedStart, end: clampedEnd };
+}
+
 // ─── Main Analytics Function ──────────────────────────────────────────────────
 
 export async function computeAnalytics(
@@ -56,13 +73,24 @@ export async function computeAnalytics(
   playerId: string
 ): Promise<AnalyticsResult> {
   const now = new Date();
-  const day84Ago = new Date(now);
-  day84Ago.setUTCDate(day84Ago.getUTCDate() - 84);
+  const todayStart = startOfDay(now);
+  const day84Ago = addUtcDays(todayStart, -84);
+  const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const last7dStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  // ── Fetch daily stats (last 84 days) ──────────────────────────────────────
-  const dailyStats = await prisma.playerDailyStat.findMany({
-    where: { userId, playerId, date: { gte: day84Ago } },
-    orderBy: { date: "asc" },
+  const sessions = await prisma.session.findMany({
+    where: {
+      userId,
+      playerId,
+      joinedAt: { lt: now },
+      OR: [{ leftAt: null }, { leftAt: { gt: day84Ago } }],
+    },
+    select: {
+      joinedAt: true,
+      leftAt: true,
+      durationSec: true,
+    },
+    orderBy: { joinedAt: "asc" },
   });
 
   // ── Fetch hourly stats ─────────────────────────────────────────────────────
@@ -71,31 +99,65 @@ export async function computeAnalytics(
     orderBy: { hour: "asc" },
   });
 
-  // ── Summary ────────────────────────────────────────────────────────────────
-  const todayStart = startOfDay(now);
-  const day7Ago = new Date(now);
-  day7Ago.setUTCDate(day7Ago.getUTCDate() - 7);
-
   let last24h = 0;
   let last7d = 0;
   let last12w = 0;
+  const dailyMap = new Map<string, DailyPoint>();
+  const todayHourlyBuckets = new Array<number>(24).fill(0);
+  let closedSessionCount = 0;
+  let closedSessionTime = 0;
 
-  for (const stat of dailyStats) {
-    last12w += stat.totalTimeSec;
-    if (stat.date >= day7Ago) last7d += stat.totalTimeSec;
-    if (stat.date >= todayStart) last24h += stat.totalTimeSec;
+  for (const session of sessions) {
+    const sessionEnd = session.leftAt ?? now;
+
+    const range24h = clampSessionRange(session.joinedAt, sessionEnd, last24hStart, now);
+    if (range24h) {
+      last24h += Math.round((range24h.end.getTime() - range24h.start.getTime()) / 1000);
+    }
+
+    const range7d = clampSessionRange(session.joinedAt, sessionEnd, last7dStart, now);
+    if (range7d) {
+      last7d += Math.round((range7d.end.getTime() - range7d.start.getTime()) / 1000);
+    }
+
+    const range12w = clampSessionRange(session.joinedAt, sessionEnd, day84Ago, now);
+    if (range12w) {
+      const daySplits = splitSessionAcrossDays(range12w.start, range12w.end);
+      for (const { date, seconds } of daySplits) {
+        const key = date.toISOString().split("T")[0];
+        const existing = dailyMap.get(key);
+
+        if (existing) {
+          existing.totalTimeSec += seconds;
+          existing.sessionsCount += 1;
+        } else {
+          dailyMap.set(key, {
+            date: key,
+            totalTimeSec: seconds,
+            sessionsCount: 1,
+          });
+        }
+
+        last12w += seconds;
+      }
+    }
+
+    const todayRange = clampSessionRange(session.joinedAt, sessionEnd, todayStart, now);
+    if (todayRange) {
+      const hourSplits = splitSessionAcrossHours(todayRange.start, todayRange.end);
+      for (const { hour, seconds } of hourSplits) {
+        todayHourlyBuckets[hour] += seconds;
+      }
+    }
+
+    if (session.leftAt && session.durationSec) {
+      closedSessionCount += 1;
+      closedSessionTime += session.durationSec;
+    }
   }
 
-  // Add current open session time to last24h, hourly, and daily
-  const openSession = await prisma.session.findFirst({
-    where: { userId, playerId, leftAt: null },
-    orderBy: { joinedAt: "desc" },
-  });
+  const openSession = sessions.find((session) => session.leftAt === null);
   if (openSession) {
-    const elapsed = Math.floor((now.getTime() - openSession.joinedAt.getTime()) / 1000);
-    last24h += elapsed;
-
-    // Merge into hourly stats for heatmap
     const splits = splitSessionAcrossHours(openSession.joinedAt, now);
     for (const { hour, seconds } of splits) {
       const existingHour = hourlyStats.find((h) => h.hour === hour);
@@ -105,46 +167,23 @@ export async function computeAnalytics(
         hourlyStats.push({ id: -1, userId, playerId, hour, totalTimeSec: seconds });
       }
     }
-
-    // Merge into daily stats
-    const today = startOfDay(now);
-    const existingDaily = dailyStats.find((d) => d.date.getTime() === today.getTime());
-    if (existingDaily) {
-      existingDaily.totalTimeSec += elapsed;
-    } else {
-      dailyStats.push({
-        id: -1,
-        userId,
-        playerId,
-        date: today,
-        totalTimeSec: elapsed,
-        sessionsCount: 1,
-      });
-    }
   }
 
   // ── Insights ───────────────────────────────────────────────────────────────
   const sortedByTime = [...hourlyStats].sort((a, b) => b.totalTimeSec - a.totalTimeSec);
   const peakHours = sortedByTime.slice(0, 3).map((h) => h.hour);
   const deadHours = sortedByTime.slice(-3).map((h) => h.hour);
-
-  const totalSessions = dailyStats.reduce((s, d) => s + d.sessionsCount, 0);
-  const totalTime = dailyStats.reduce((s, d) => s + d.totalTimeSec, 0);
-  const avgSessionLength = totalSessions > 0 ? Math.round(totalTime / totalSessions) : 0;
+  const avgSessionLength =
+    closedSessionCount > 0 ? Math.round(closedSessionTime / closedSessionCount) : 0;
 
   // ── Forecast (recency-weighted) ────────────────────────────────────────────
   const forecast = await computeForecast(userId, playerId, now);
 
   // ── Format outputs ─────────────────────────────────────────────────────────
-  const daily: DailyPoint[] = dailyStats.map((s) => ({
-    date: s.date.toISOString().split("T")[0],
-    totalTimeSec: s.totalTimeSec,
-    sessionsCount: s.sessionsCount,
-  }));
-
-  const hourly: HourlyPoint[] = hourlyStats.map((s) => ({
-    hour: s.hour,
-    totalTimeSec: s.totalTimeSec,
+  const daily: DailyPoint[] = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const hourly: HourlyPoint[] = Array.from({ length: 24 }, (_, hour) => ({
+    hour,
+    totalTimeSec: todayHourlyBuckets[hour],
   }));
 
   return {
@@ -218,6 +257,29 @@ export function splitSessionAcrossHours(
     const seconds = Math.round((segEnd.getTime() - cursor.getTime()) / 1000);
     if (seconds > 0) result.push({ hour, seconds });
     cursor = hourEnd;
+  }
+
+  return result;
+}
+
+export function splitSessionAcrossDays(
+  start: Date,
+  end: Date
+): { date: Date; seconds: number }[] {
+  const result: { date: Date; seconds: number }[] = [];
+  let cursor = new Date(start);
+
+  while (cursor < end) {
+    const dayStart = startOfDay(cursor);
+    const dayEnd = addUtcDays(dayStart, 1);
+    const segEnd = dayEnd < end ? dayEnd : end;
+    const seconds = Math.round((segEnd.getTime() - cursor.getTime()) / 1000);
+
+    if (seconds > 0) {
+      result.push({ date: dayStart, seconds });
+    }
+
+    cursor = dayEnd;
   }
 
   return result;
