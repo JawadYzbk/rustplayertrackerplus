@@ -119,8 +119,11 @@ export default function PlayerAnalyticsPage({
   useEffect(() => {
     async function fetchData() {
       try {
+        const timezoneOffsetMinutes = new Date().getTimezoneOffset();
         const [analyticsResponse, sessionsResponse] = await Promise.all([
-          axios.get(`/api/players/${id}/analytics`),
+          axios.get(`/api/players/${id}/analytics`, {
+            params: { timezoneOffsetMinutes },
+          }),
           axios.get(`/api/sessions`, { params: { playerId: id, limit: 100 } }),
         ]);
 

@@ -45,8 +45,24 @@ export interface AnalyticsResult {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function startOfDay(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+function shiftByOffset(d: Date, timezoneOffsetMinutes: number): Date {
+  return new Date(d.getTime() - timezoneOffsetMinutes * 60_000);
+}
+
+function formatShiftedDateKey(d: Date, timezoneOffsetMinutes: number): string {
+  const shifted = shiftByOffset(d, timezoneOffsetMinutes);
+  const year = shifted.getUTCFullYear();
+  const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfDay(d: Date, timezoneOffsetMinutes = 0): Date {
+  const shifted = shiftByOffset(d, timezoneOffsetMinutes);
+  return new Date(
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) +
+      timezoneOffsetMinutes * 60_000
+  );
 }
 
 function addUtcDays(d: Date, days: number): Date {
@@ -70,10 +86,11 @@ function clampSessionRange(start: Date, end: Date, windowStart: Date, windowEnd:
 
 export async function computeAnalytics(
   userId: string,
-  playerId: string
+  playerId: string,
+  timezoneOffsetMinutes = 0
 ): Promise<AnalyticsResult> {
   const now = new Date();
-  const todayStart = startOfDay(now);
+  const todayStart = startOfDay(now, timezoneOffsetMinutes);
   const day84Ago = addUtcDays(todayStart, -84);
   const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const last7dStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -108,17 +125,12 @@ export async function computeAnalytics(
     }),
   ]);
 
-  // ── Fetch hourly stats ─────────────────────────────────────────────────────
-  const hourlyStats = await prisma.playerHourlyStat.findMany({
-    where: { userId, playerId },
-    orderBy: { hour: "asc" },
-  });
-
   let last24h = 0;
   let last7d = 0;
   let last12w = 0;
   const dailyMap = new Map<string, DailyPoint>();
   const todayHourlyBuckets = new Array<number>(24).fill(0);
+  const historicalHourlyBuckets = new Array<number>(24).fill(0);
   let closedSessionCount = 0;
   let closedSessionTime = 0;
 
@@ -129,7 +141,11 @@ export async function computeAnalytics(
       continue;
     }
 
-    const hourSplits = splitSessionAcrossHours(todayRange.start, todayRange.end);
+    const hourSplits = splitSessionAcrossHours(
+      todayRange.start,
+      todayRange.end,
+      timezoneOffsetMinutes
+    );
     for (const { hour, seconds } of hourSplits) {
       todayHourlyBuckets[hour] += seconds;
     }
@@ -150,9 +166,13 @@ export async function computeAnalytics(
 
     const range12w = clampSessionRange(session.joinedAt, sessionEnd, day84Ago, now);
     if (range12w) {
-      const daySplits = splitSessionAcrossDays(range12w.start, range12w.end);
+      const daySplits = splitSessionAcrossDays(
+        range12w.start,
+        range12w.end,
+        timezoneOffsetMinutes
+      );
       for (const { date, seconds } of daySplits) {
-        const key = date.toISOString().split("T")[0];
+        const key = formatShiftedDateKey(date, timezoneOffsetMinutes);
         const existing = dailyMap.get(key);
 
         if (existing) {
@@ -168,6 +188,15 @@ export async function computeAnalytics(
 
         last12w += seconds;
       }
+
+      const hourSplits = splitSessionAcrossHours(
+        range12w.start,
+        range12w.end,
+        timezoneOffsetMinutes
+      );
+      for (const { hour, seconds } of hourSplits) {
+        historicalHourlyBuckets[hour] += seconds;
+      }
     }
 
     if (session.leftAt && session.durationSec) {
@@ -176,21 +205,10 @@ export async function computeAnalytics(
     }
   }
 
-  const openSession = sessions.find((session) => session.leftAt === null);
-  if (openSession) {
-    const splits = splitSessionAcrossHours(openSession.joinedAt, now);
-    for (const { hour, seconds } of splits) {
-      const existingHour = hourlyStats.find((h) => h.hour === hour);
-      if (existingHour) {
-        existingHour.totalTimeSec += seconds;
-      } else {
-        hourlyStats.push({ id: -1, userId, playerId, hour, totalTimeSec: seconds });
-      }
-    }
-  }
-
   // ── Insights ───────────────────────────────────────────────────────────────
-  const sortedByTime = [...hourlyStats].sort((a, b) => b.totalTimeSec - a.totalTimeSec);
+  const sortedByTime = historicalHourlyBuckets
+    .map((totalTimeSec, hour) => ({ hour, totalTimeSec }))
+    .sort((a, b) => b.totalTimeSec - a.totalTimeSec);
   const peakHours = sortedByTime.slice(0, 3).map((h) => h.hour);
   const deadHours = sortedByTime.slice(-3).map((h) => h.hour);
   const avgSessionLength =
@@ -264,15 +282,18 @@ async function computeForecast(
 
 export function splitSessionAcrossHours(
   start: Date,
-  end: Date
+  end: Date,
+  timezoneOffsetMinutes = 0
 ): { hour: number; seconds: number }[] {
   const result: { hour: number; seconds: number }[] = [];
   let cursor = new Date(start);
 
   while (cursor < end) {
-    const hour = cursor.getUTCHours();
-    const hourEnd = new Date(cursor);
-    hourEnd.setUTCHours(hour + 1, 0, 0, 0);
+    const shiftedCursor = shiftByOffset(cursor, timezoneOffsetMinutes);
+    const hour = shiftedCursor.getUTCHours();
+    const shiftedHourEnd = new Date(shiftedCursor);
+    shiftedHourEnd.setUTCHours(hour + 1, 0, 0, 0);
+    const hourEnd = new Date(shiftedHourEnd.getTime() + timezoneOffsetMinutes * 60_000);
     const segEnd = hourEnd < end ? hourEnd : end;
     const seconds = Math.round((segEnd.getTime() - cursor.getTime()) / 1000);
     if (seconds > 0) result.push({ hour, seconds });
@@ -284,13 +305,14 @@ export function splitSessionAcrossHours(
 
 export function splitSessionAcrossDays(
   start: Date,
-  end: Date
+  end: Date,
+  timezoneOffsetMinutes = 0
 ): { date: Date; seconds: number }[] {
   const result: { date: Date; seconds: number }[] = [];
   let cursor = new Date(start);
 
   while (cursor < end) {
-    const dayStart = startOfDay(cursor);
+    const dayStart = startOfDay(cursor, timezoneOffsetMinutes);
     const dayEnd = addUtcDays(dayStart, 1);
     const segEnd = dayEnd < end ? dayEnd : end;
     const seconds = Math.round((segEnd.getTime() - cursor.getTime()) / 1000);
