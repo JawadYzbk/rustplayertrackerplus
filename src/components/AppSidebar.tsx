@@ -26,7 +26,7 @@ export default function AppSidebar() {
     <aside className="app-sidebar">
       {/* Brand */}
       <div className="flex items-center gap-3 px-2 mb-6">
-        <Image src={Logo} alt="Logo" width={36} height={36} className="rounded-xl bg-primary object-cover shadow-lg shrink-0" />
+        <Image src={Logo} alt="Logo" width={36} height={36} className="rounded-xl bg-black object-cover shadow-lg shrink-0" />
         <div className="leading-tight">
           <p className="text-sm font-bold text-foreground tracking-tight">RustTracker+</p>
           <p className="text-[10px] text-muted-foreground">Intelligence Platform</p>
