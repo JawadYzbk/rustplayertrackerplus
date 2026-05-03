@@ -26,6 +26,12 @@ model Server {
   name      String
   createdAt DateTime @default(now())
 
+  // Rust+ Credentials
+  rustPlusIp          String?
+  rustPlusPort        Int?
+  rustPlusPlayerId    String?
+  rustPlusPlayerToken String?
+
   user     AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
   players  Player[]
   sessions Session[]
@@ -42,6 +48,7 @@ model Player {
   firstSeen DateTime @default(now())
   lastSeen  DateTime
   isTracking Boolean  @default(true)
+  rustPlusNotifications Boolean @default(false)
 
   user        AppUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
   server      Server            @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)

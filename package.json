@@ -11,6 +11,8 @@
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@clerk/nextjs": "^7.2.7",
+    "@liamcottle/push-receiver": "^0.0.4",
+    "@liamcottle/rustplus.js": "github:liamcottle/rustplus.js",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/pg": "^8.20.0",

@@ -4,6 +4,14 @@ import {
   unauthorizedJsonResponse,
 } from "@/lib/current-user";
 import { NextRequest } from "next/server";
+import { z } from "zod";
+
+const UpdatePlayerSchema = z
+  .object({
+    isTracking: z.boolean().optional(),
+    rustPlusNotifications: z.boolean().optional(),
+  })
+  .strict();
 
 export async function DELETE(
   req: NextRequest,
@@ -45,12 +53,15 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = await req.json();
+  const parsed = UpdatePlayerSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
 
   try {
     const player = await prisma.player.update({
       where: { userId_id: { userId, id } },
-      data: body, // For now allow updating any field, e.g. isTracking
+      data: parsed.data,
     });
 
     return Response.json(player);

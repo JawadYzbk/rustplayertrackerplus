@@ -27,6 +27,23 @@ interface Server {
   name: string;
   createdAt: string;
   _count: { players: number; sessions: number };
+  rustPlusIp: string | null;
+  rustPlusPort: number | null;
+  rustPlusPlayerId: string | null;
+  rustPlusPlayerToken: string | null;
+}
+
+interface PairingStatus {
+  startedAt: number;
+  expiresAt: number;
+  status: "starting" | "listening" | "completed" | "expired" | "error";
+  message: string;
+  lastPairing: {
+    id: string;
+    name?: string;
+    ip: string;
+    port: string | number;
+  } | null;
 }
 
 interface LivePlayer {
@@ -61,6 +78,14 @@ export default function ServersPage() {
   const [livePlayers, setLivePlayers] = useState<LivePlayer[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [addingPlayerId, setAddingPlayerId] = useState<string | null>(null);
+  const [configServer, setConfigServer] = useState<Server | null>(null);
+  const [rustPlusIp, setRustPlusIp] = useState("");
+  const [rustPlusPort, setRustPlusPort] = useState("");
+  const [rustPlusPlayerId, setRustPlusPlayerId] = useState("");
+  const [rustPlusPlayerToken, setRustPlusPlayerToken] = useState("");
+  const [savingRustPlus, setSavingRustPlus] = useState(false);
+  const [pairingStatus, setPairingStatus] = useState<PairingStatus | null>(null);
+  const [startingPairing, setStartingPairing] = useState(false);
 
   // Filter & sort state
   const [search, setSearch] = useState("");
@@ -78,12 +103,50 @@ export default function ServersPage() {
     }
   };
 
+  async function startPairingListener(authToken: string) {
+    setStartingPairing(true);
+    try {
+      const { data } = await axios.post<{ status: PairingStatus | null }>(
+        "/api/rustplus/pairing",
+        {
+          authToken,
+          listenMs: 120000,
+        }
+      );
+      setPairingStatus(data.status);
+      toast.success("Rust+ listener started. Pair your server in-game now.");
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to start Rust+ listener"
+          : "Failed to start Rust+ listener"
+      );
+    } finally {
+      setStartingPairing(false);
+    }
+  }
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void fetchServers();
     }, 0);
 
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const loadPairingStatus = async () => {
+      try {
+        const { data } = await axios.get<{ status: PairingStatus | null }>(
+          "/api/rustplus/pairing"
+        );
+        setPairingStatus(data.status);
+      } catch {
+        // ignore initial status load errors
+      }
+    };
+
+    void loadPairingStatus();
   }, []);
 
   useEffect(() => {
@@ -97,6 +160,45 @@ export default function ServersPage() {
 
     return () => window.clearInterval(timer);
   }, [liveModalServer]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "RUSTPLUS_AUTH_TOKEN" || !event.data?.token) return;
+
+      void startPairingListener(String(event.data.token));
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const isActive =
+      pairingStatus?.status === "starting" || pairingStatus?.status === "listening";
+
+    if (isActive) {
+      timer = setInterval(async () => {
+        try {
+          const { data } = await axios.get<{ status: PairingStatus | null }>(
+            "/api/rustplus/pairing"
+          );
+          setPairingStatus(data.status);
+          if (data.status?.status === "completed") {
+            await fetchServers();
+            toast.success("Rust+ pairing received and server credentials saved.");
+          }
+        } catch {
+          // best effort polling
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [pairingStatus?.status]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +264,70 @@ export default function ServersPage() {
       fetchServers();
     } catch {
       toast.error("Failed to delete server");
+    }
+  };
+
+  const openRustPlusConfig = (server: Server) => {
+    setConfigServer(server);
+    setRustPlusIp(server.rustPlusIp ?? "");
+    setRustPlusPort(server.rustPlusPort ? String(server.rustPlusPort) : "");
+    setRustPlusPlayerId(server.rustPlusPlayerId ?? "");
+    setRustPlusPlayerToken(server.rustPlusPlayerToken ?? "");
+  };
+
+  const handleSaveRustPlus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!configServer) return;
+
+    setSavingRustPlus(true);
+    try {
+      const normalizedIp = rustPlusIp.trim();
+      const normalizedPort = rustPlusPort.trim();
+      const normalizedPlayerId = rustPlusPlayerId.trim();
+      const normalizedPlayerToken = rustPlusPlayerToken.trim();
+
+      const shouldClearAll =
+        !normalizedIp && !normalizedPort && !normalizedPlayerId && !normalizedPlayerToken;
+
+      await axios.patch(`/api/servers/${configServer.id}`, {
+        rustPlusIp: shouldClearAll ? null : normalizedIp,
+        rustPlusPort: shouldClearAll ? null : Number(normalizedPort),
+        rustPlusPlayerId: shouldClearAll ? null : normalizedPlayerId,
+        rustPlusPlayerToken: shouldClearAll ? null : normalizedPlayerToken,
+      });
+
+      toast.success("Rust+ settings saved");
+      setConfigServer(null);
+      await fetchServers();
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to save Rust+ settings"
+          : "Failed to save Rust+ settings"
+      );
+    } finally {
+      setSavingRustPlus(false);
+    }
+  };
+
+  const handleConnectRustPlus = () => {
+    const popup = window.open(
+      "/rustplus/connect",
+      "rustplus-connect",
+      "width=520,height=720"
+    );
+    if (!popup) {
+      toast.error("Popup blocked. Please allow popups for this site.");
+    }
+  };
+
+  const handleStopPairing = async () => {
+    try {
+      await axios.delete("/api/rustplus/pairing");
+      setPairingStatus(null);
+      toast.success("Rust+ pairing listener stopped.");
+    } catch {
+      toast.error("Failed to stop Rust+ pairing listener");
     }
   };
 
@@ -243,6 +409,32 @@ export default function ServersPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Rust+ Client Pairing</CardTitle>
+          <CardDescription>
+            Sign in to Rust+, then we listen for a pairing event for 2 minutes and save creds.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="text-xs text-muted-foreground">
+            {pairingStatus ? pairingStatus.message : "No active pairing listener."}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleConnectRustPlus} disabled={startingPairing}>
+              {startingPairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Connect Rust+
+            </Button>
+            {pairingStatus &&
+              (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
+                <Button variant="outline" onClick={handleStopPairing}>
+                  Stop Listener
+                </Button>
+              )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ServerIcon size={18} className="text-primary" /> Tracked Servers
           </CardTitle>
@@ -266,6 +458,7 @@ export default function ServersPage() {
                     <TableHead>BattleMetrics ID</TableHead>
                     <TableHead>Tracked Players</TableHead>
                     <TableHead>Sessions</TableHead>
+                    <TableHead>Rust+</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -276,7 +469,25 @@ export default function ServersPage() {
                       <TableCell className="font-mono text-xs text-muted-foreground">{server.id}</TableCell>
                       <TableCell>{server._count.players.toLocaleString()}</TableCell>
                       <TableCell>{server._count.sessions.toLocaleString()}</TableCell>
+                      <TableCell>
+                        {server.rustPlusIp &&
+                        server.rustPlusPort &&
+                        server.rustPlusPlayerId &&
+                        server.rustPlusPlayerToken ? (
+                          <span className="text-xs font-medium text-green-500">Configured</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Not set</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mr-2"
+                          onClick={() => openRustPlusConfig(server)}
+                        >
+                          Rust+
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -400,6 +611,91 @@ export default function ServersPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {configServer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setConfigServer(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl border bg-card p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold">Rust+ Chat Settings</h3>
+            <p className="text-xs text-muted-foreground">
+              {configServer.name} ({configServer.id})
+            </p>
+
+            <form className="mt-4 space-y-3" onSubmit={handleSaveRustPlus}>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Server IP / Host</label>
+                <Input
+                  value={rustPlusIp}
+                  onChange={(e) => setRustPlusIp(e.target.value)}
+                  placeholder="e.g. 127.0.0.1"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">App Port (app.port)</label>
+                <Input
+                  value={rustPlusPort}
+                  onChange={(e) => setRustPlusPort(e.target.value)}
+                  placeholder="e.g. 28082"
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Player ID (Steam ID)</label>
+                <Input
+                  value={rustPlusPlayerId}
+                  onChange={(e) => setRustPlusPlayerId(e.target.value)}
+                  placeholder="Your Rust+ player ID"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Player Token</label>
+                <Input
+                  value={rustPlusPlayerToken}
+                  onChange={(e) => setRustPlusPlayerToken(e.target.value)}
+                  placeholder="Rust+ pairing token"
+                />
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Leave all fields empty and save to disable Rust+ messages for this server.
+              </p>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setConfigServer(null)}
+                  disabled={savingRustPlus}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    savingRustPlus ||
+                    ((rustPlusIp.trim() === "" ||
+                      rustPlusPort.trim() === "" ||
+                      rustPlusPlayerId.trim() === "" ||
+                      rustPlusPlayerToken.trim() === "") &&
+                      (rustPlusIp.trim() !== "" ||
+                        rustPlusPort.trim() !== "" ||
+                        rustPlusPlayerId.trim() !== "" ||
+                        rustPlusPlayerToken.trim() !== ""))
+                  }
+                >
+                  {savingRustPlus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

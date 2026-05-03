@@ -9,6 +9,7 @@ import { prisma } from "./prisma";
 import { splitSessionAcrossDays, splitSessionAcrossHours } from "./analytics";
 
 const POLL_INTERVAL_MS = 60_000;
+const RUST_PLUS_SEND_TIMEOUT_MS = 8_000;
 
 // ─── BattleMetrics Types ──────────────────────────────────────────────────────
 
@@ -48,8 +49,109 @@ interface BMServerResponse {
   included?: BMIncluded[];
 }
 
+interface RustPlusCredentials {
+  ip: string;
+  port: number;
+  playerId: string;
+  playerToken: string;
+}
+
+interface RustPlusClient {
+  on(event: "connected" | "disconnected" | "error", listener: (err?: unknown) => void): void;
+  connect(): void;
+  disconnect(): void;
+  sendTeamMessage(message: string): void;
+}
+
 function isBMSessionIncluded(include: BMIncluded): include is BMSessionIncluded {
   return include.type === "session" && "attributes" in include;
+}
+
+function getRustPlusCredentials(server: {
+  rustPlusIp: string | null;
+  rustPlusPort: number | null;
+  rustPlusPlayerId: string | null;
+  rustPlusPlayerToken: string | null;
+}): RustPlusCredentials | null {
+  if (
+    !server.rustPlusIp ||
+    !server.rustPlusPort ||
+    !server.rustPlusPlayerId ||
+    !server.rustPlusPlayerToken
+  ) {
+    return null;
+  }
+
+  return {
+    ip: server.rustPlusIp,
+    port: server.rustPlusPort,
+    playerId: server.rustPlusPlayerId,
+    playerToken: server.rustPlusPlayerToken,
+  };
+}
+
+async function sendRustPlusTeamMessage(
+  credentials: RustPlusCredentials,
+  message: string
+): Promise<void> {
+  const rustPlusModule = (await import("@liamcottle/rustplus.js")) as {
+    default: new (
+      ip: string,
+      port: string,
+      playerId: string,
+      playerToken: string
+    ) => RustPlusClient;
+  };
+  const RustPlus = rustPlusModule.default;
+
+  await new Promise<void>((resolve, reject) => {
+    const rustPlus = new RustPlus(
+      credentials.ip,
+      String(credentials.port),
+      credentials.playerId,
+      credentials.playerToken
+    );
+
+    let settled = false;
+    const finish = (error?: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      try {
+        rustPlus.disconnect();
+      } catch {
+        // ignore disconnect errors
+      }
+
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    };
+
+    rustPlus.on("connected", () => {
+      try {
+        rustPlus.sendTeamMessage(message);
+        setTimeout(() => finish(), 400);
+      } catch (error) {
+        finish(error);
+      }
+    });
+
+    rustPlus.on("error", (error) => finish(error));
+    rustPlus.on("disconnected", () => finish());
+
+    const timeout = setTimeout(() => {
+      finish(new Error("Rust+ send timeout"));
+    }, RUST_PLUS_SEND_TIMEOUT_MS);
+
+    try {
+      rustPlus.connect();
+    } catch (error) {
+      finish(error);
+    }
+  });
 }
 
 // ─── Main Poll Loop ───────────────────────────────────────────────────────────
@@ -88,6 +190,22 @@ async function runPoll(): Promise<void> {
 
 async function pollServer(userId: string, serverId: string): Promise<void> {
   try {
+    if (!/^\d+$/.test(serverId)) {
+      return;
+    }
+
+    const server = await prisma.server.findUnique({
+      where: { userId_id: { userId, id: serverId } },
+      select: {
+        rustPlusIp: true,
+        rustPlusPort: true,
+        rustPlusPlayerId: true,
+        rustPlusPlayerToken: true,
+      },
+    });
+    if (!server) return;
+
+    const rustPlusCredentials = getRustPlusCredentials(server);
     const url = `https://api.battlemetrics.com/servers/${serverId}?include=player,session`;
     const headers: Record<string, string> = {};
     if (process.env.BATTLEMETRICS_TOKEN) {
@@ -103,9 +221,9 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
     // Find tracked players in DB
     const trackedPlayers = await prisma.player.findMany({
       where: { userId, serverId, isTracking: true },
-      select: { id: true },
+      select: { id: true, rustPlusNotifications: true },
     });
-    const trackedIds = new Set(trackedPlayers.map((p) => p.id));
+    const trackedById = new Map(trackedPlayers.map((p) => [p.id, p]));
 
     // Map player to session start time
     const sessionMap = new Map<string, Date>();
@@ -128,7 +246,8 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
 
     // ── Handle tracked players (join / stay) ───────────────────────────────
     for (const bm of onlinePlayers) {
-      if (trackedIds.has(bm.id)) {
+      const tracked = trackedById.get(bm.id);
+      if (tracked) {
         const sessionStart = sessionMap.get(bm.id) || now;
         await handlePlayerOnline(
           userId,
@@ -136,13 +255,15 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
           bm.attributes?.name || "Unknown",
           serverId,
           now,
-          sessionStart
+          sessionStart,
+          tracked.rustPlusNotifications,
+          rustPlusCredentials
         );
       }
     }
 
     // ── Handle players who left (close open sessions for this server) ─────
-    await handlePlayersLeft(userId, serverId, onlineIds, now);
+    await handlePlayersLeft(userId, serverId, onlineIds, now, rustPlusCredentials);
   } catch (err) {
     console.error(`[Worker] Error polling server ${serverId} for user ${userId}:`, err);
   }
@@ -156,7 +277,9 @@ async function handlePlayerOnline(
   name: string,
   serverId: string,
   now: Date,
-  sessionStart: Date
+  sessionStart: Date,
+  rustPlusNotifications: boolean,
+  rustPlusCredentials: RustPlusCredentials | null
 ): Promise<void> {
   // Update last seen
   await prisma.player.update({
@@ -173,6 +296,17 @@ async function handlePlayerOnline(
     await prisma.session.create({
       data: { userId, playerId, serverId, joinedAt: sessionStart },
     });
+
+    if (rustPlusNotifications && rustPlusCredentials) {
+      try {
+        await sendRustPlusTeamMessage(
+          rustPlusCredentials,
+          `[Tracker] ${name} joined the server.`
+        );
+      } catch (error) {
+        console.error(`[Worker] Failed Rust+ join message for ${name}:`, error);
+      }
+    }
   }
 }
 
@@ -182,12 +316,18 @@ async function handlePlayersLeft(
   userId: string,
   serverId: string,
   onlineIds: Set<string>,
-  now: Date
+  now: Date,
+  rustPlusCredentials: RustPlusCredentials | null
 ): Promise<void> {
   // Find all open sessions for this server whose player is no longer online
   const staleSessions = await prisma.session.findMany({
     where: { userId, serverId, leftAt: null },
-    select: { id: true, playerId: true, joinedAt: true },
+    select: {
+      id: true,
+      playerId: true,
+      joinedAt: true,
+      player: { select: { name: true, rustPlusNotifications: true } },
+    },
   });
 
   for (const session of staleSessions) {
@@ -202,7 +342,18 @@ async function handlePlayersLeft(
     });
 
     // Aggregate stats
-    await aggregateSession(userId, session.playerId, session.joinedAt, now, durationSec);
+    await aggregateSession(userId, session.playerId, session.joinedAt, now);
+
+    if (session.player.rustPlusNotifications && rustPlusCredentials) {
+      try {
+        await sendRustPlusTeamMessage(
+          rustPlusCredentials,
+          `[Tracker] ${session.player.name} left the server.`
+        );
+      } catch (error) {
+        console.error(`[Worker] Failed Rust+ leave message for ${session.player.name}:`, error);
+      }
+    }
   }
 }
 
@@ -212,8 +363,7 @@ async function aggregateSession(
   userId: string,
   playerId: string,
   joinedAt: Date,
-  leftAt: Date,
-  durationSec: number
+  leftAt: Date
 ): Promise<void> {
   // 1. Daily stats — split session across UTC day boundaries
   const daySplits = splitSessionAcrossDays(joinedAt, leftAt);

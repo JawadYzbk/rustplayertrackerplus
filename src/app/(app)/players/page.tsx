@@ -43,6 +43,7 @@ interface Player {
   firstSeen: string;
   lastSeen: string;
   isOnline: boolean;
+  rustPlusNotifications: boolean;
 }
 
 interface SortableHeadProps {
@@ -99,6 +100,7 @@ export default function PlayersPage() {
   const [newPlayerServer, setNewPlayerServer] = useState("");
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingNotifId, setTogglingNotifId] = useState<string | null>(null);
 
   useEffect(() => {
     axios.get("/api/servers").then((res) => setServers(res.data));
@@ -159,6 +161,30 @@ export default function PlayersPage() {
       toast.error("Failed to stop tracking player");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleToggleRustPlusNotifications = async (
+    playerId: string,
+    enabled: boolean
+  ) => {
+    setTogglingNotifId(playerId);
+    try {
+      await axios.patch(`/api/players/${playerId}`, {
+        rustPlusNotifications: !enabled,
+      });
+      setPlayers((prev) =>
+        prev.map((player) =>
+          player.id === playerId
+            ? { ...player, rustPlusNotifications: !enabled }
+            : player
+        )
+      );
+      toast.success(`Rust+ alerts ${enabled ? "disabled" : "enabled"}`);
+    } catch {
+      toast.error("Failed to update Rust+ alerts");
+    } finally {
+      setTogglingNotifId(null);
     }
   };
 
@@ -287,13 +313,14 @@ export default function PlayersPage() {
                     sortDir={sortDir}
                     onToggle={toggleSort}
                   />
+                  <TableHead>Rust+ Alerts</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {players.length === 0 && !loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                       No players found.
                     </TableCell>
                   </TableRow>
@@ -324,6 +351,27 @@ export default function PlayersPage() {
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(player.firstSeen).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant={player.rustPlusNotifications ? "secondary" : "outline"}
+                          size="sm"
+                          disabled={togglingNotifId === player.id}
+                          onClick={() =>
+                            handleToggleRustPlusNotifications(
+                              player.id,
+                              player.rustPlusNotifications
+                            )
+                          }
+                        >
+                          {togglingNotifId === player.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : player.rustPlusNotifications ? (
+                            "Enabled"
+                          ) : (
+                            "Disabled"
+                          )}
+                        </Button>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
