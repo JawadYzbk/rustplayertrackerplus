@@ -2,16 +2,31 @@ import axios from "axios";
 import { prisma } from "@/lib/prisma";
 import { ensureAppUser } from "@/lib/current-user";
 import { randomUUID } from "crypto";
+import * as protobuf from "protobufjs";
+import fs from "fs";
+import path from "path";
 
-// Polyfill XMLHttpRequest for push-receiver if needed in Node.js environment
-if (typeof XMLHttpRequest === "undefined") {
-  try {
-    const { XMLHttpRequest: XHR } = require("xmlhttprequest");
-    (global as any).XMLHttpRequest = XHR;
-  } catch {
-    // ignore if package not found, we'll try to handle it or user can install it
+// Monkey-patch protobufjs.load to use fs.readFileSync for local .proto files.
+// This prevents protobufjs from trying to use XMLHttpRequest/fetch in bundled environments
+// like Next.js, which causes "illegal token 'AggregateError'" when loading local files.
+const originalLoad = protobuf.load;
+(protobuf as any).load = function (filename: string, callback: any) {
+  if (typeof filename === "string" && (filename.endsWith(".proto") || filename.includes(".proto"))) {
+    try {
+      const content = fs.readFileSync(path.resolve(filename), "utf8");
+      const parsed = protobuf.parse(content);
+      const root = parsed.root;
+      if (callback) {
+        callback(null, root);
+        return;
+      }
+      return Promise.resolve(root);
+    } catch (err) {
+      return originalLoad.apply(this, arguments as any);
+    }
   }
-}
+  return originalLoad.apply(this, arguments as any);
+};
 
 const DEFAULT_LISTEN_MS = 120_000;
 const MAX_LISTEN_MS = 300_000;
