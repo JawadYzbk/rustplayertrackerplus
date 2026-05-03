@@ -16,27 +16,49 @@ if (typeof XMLHttpRequest === "undefined") {
   }
 }
 
+// Force protobufjs to use Node.js mode and avoid using the XMLHttpRequest polyfill for file loading
+(protobuf as any).util.isNode = true;
+(protobuf as any).util.global.XMLHttpRequest = undefined;
+(protobuf as any).util.global.fetch = undefined;
+
 // Monkey-patch protobufjs.load to use fs.readFileSync for local .proto files.
 // This prevents protobufjs from trying to use XMLHttpRequest/fetch in bundled environments
 // like Next.js, which causes "illegal token 'AggregateError'" when loading local files.
 const originalLoad = protobuf.load;
-(protobuf as any).load = function (filename: string, callback: any) {
-  if (typeof filename === "string" && (filename.endsWith(".proto") || filename.includes(".proto"))) {
-    try {
-      const content = fs.readFileSync(path.resolve(filename), "utf8");
-      const parsed = protobuf.parse(content);
-      const root = parsed.root;
-      if (callback) {
-        callback(null, root);
-        return;
+const patchProtobuf = (pb: any) => {
+  const oldLoad = pb.load;
+  pb.load = function (filename: string, callback: any) {
+    if (typeof filename === "string" && (filename.endsWith(".proto") || filename.includes(".proto"))) {
+      try {
+        const resolvedPath = path.resolve(filename);
+        if (fs.existsSync(resolvedPath)) {
+          const root = pb.loadSync(resolvedPath);
+          if (callback) {
+            callback(null, root);
+            return;
+          }
+          return Promise.resolve(root);
+        }
+      } catch (err) {
+        // fallback
       }
-      return Promise.resolve(root);
-    } catch (err) {
-      return originalLoad.apply(this, arguments as any);
     }
-  }
-  return originalLoad.apply(this, arguments as any);
+    return oldLoad.apply(this, arguments as any);
+  };
 };
+
+patchProtobuf(protobuf);
+
+// Also try to patch nested instances if they exist
+try {
+  const nestedPb = require("@liamcottle/push-receiver/node_modules/protobufjs");
+  patchProtobuf(nestedPb);
+  nestedPb.util.isNode = true;
+  nestedPb.util.global.XMLHttpRequest = undefined;
+  nestedPb.util.global.fetch = undefined;
+} catch (e) {
+  // ignore
+}
 
 const DEFAULT_LISTEN_MS = 120_000;
 const MAX_LISTEN_MS = 300_000;
