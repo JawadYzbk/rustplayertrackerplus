@@ -6,6 +6,16 @@ import * as protobuf from "protobufjs";
 import fs from "fs";
 import path from "path";
 
+// Polyfill XMLHttpRequest for libraries that might need it in Node.js (like axios or request)
+if (typeof XMLHttpRequest === "undefined") {
+  try {
+    const { XMLHttpRequest: XHR } = require("xmlhttprequest");
+    (global as any).XMLHttpRequest = XHR;
+  } catch {
+    // ignore if package not found
+  }
+}
+
 // Monkey-patch protobufjs.load to use fs.readFileSync for local .proto files.
 // This prevents protobufjs from trying to use XMLHttpRequest/fetch in bundled environments
 // like Next.js, which causes "illegal token 'AggregateError'" when loading local files.
