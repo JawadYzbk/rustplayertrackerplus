@@ -6,58 +6,73 @@ import * as protobuf from "protobufjs";
 import fs from "fs";
 import path from "path";
 
-// Polyfill XMLHttpRequest for libraries that might need it in Node.js (like axios or request)
-if (typeof XMLHttpRequest === "undefined") {
-  try {
-    const { XMLHttpRequest: XHR } = require("xmlhttprequest");
-    (global as any).XMLHttpRequest = XHR;
-  } catch {
-    // ignore if package not found
-  }
-}
+let isPatched = false;
 
-// Force protobufjs to use Node.js mode and avoid using the XMLHttpRequest polyfill for file loading
-(protobuf as any).util.isNode = true;
-(protobuf as any).util.global.XMLHttpRequest = undefined;
-(protobuf as any).util.global.fetch = undefined;
+function ensureProtobufPatched() {
+  if (isPatched) return;
+  isPatched = true;
 
-// Monkey-patch protobufjs.load to use fs.readFileSync for local .proto files.
-// This prevents protobufjs from trying to use XMLHttpRequest/fetch in bundled environments
-// like Next.js, which causes "illegal token 'AggregateError'" when loading local files.
-const originalLoad = protobuf.load;
-const patchProtobuf = (pb: any) => {
-  const oldLoad = pb.load;
-  pb.load = function (filename: string, callback: any) {
-    if (typeof filename === "string" && (filename.endsWith(".proto") || filename.includes(".proto"))) {
-      try {
-        const resolvedPath = path.resolve(filename);
-        if (fs.existsSync(resolvedPath)) {
-          const root = pb.loadSync(resolvedPath);
-          if (callback) {
-            callback(null, root);
-            return;
-          }
-          return Promise.resolve(root);
-        }
-      } catch (err) {
-        // fallback
-      }
+  // Polyfill XMLHttpRequest for libraries that might need it in Node.js (like axios or request)
+  if (typeof XMLHttpRequest === "undefined") {
+    try {
+      const { XMLHttpRequest: XHR } = require("xmlhttprequest");
+      (global as any).XMLHttpRequest = XHR;
+    } catch {
+      // ignore
     }
-    return oldLoad.apply(this, arguments as any);
-  };
-};
+  }
 
-patchProtobuf(protobuf);
+  // Patch top-level protobufjs
+  try {
+    const patchProtobuf = (pb: any) => {
+      const oldLoad = pb.load;
+      pb.load = function (filename: string, callback: any) {
+        if (typeof filename === "string" && (filename.endsWith(".proto") || filename.includes(".proto"))) {
+          try {
+            const resolvedPath = path.resolve(filename);
+            if (fs.existsSync(resolvedPath)) {
+              const root = pb.loadSync(resolvedPath);
+              if (callback) {
+                callback(null, root);
+                return;
+              }
+              return Promise.resolve(root);
+            }
+          } catch (err) {
+            // fallback
+          }
+        }
+        return oldLoad.apply(this, arguments as any);
+      };
 
-// Also try to patch nested instances if they exist
-try {
-  const nestedPb = require("@liamcottle/push-receiver/node_modules/protobufjs");
-  patchProtobuf(nestedPb);
-  nestedPb.util.isNode = true;
-  nestedPb.util.global.XMLHttpRequest = undefined;
-  nestedPb.util.global.fetch = undefined;
-} catch (e) {
-  // ignore
+      if (pb.util) {
+        pb.util.isNode = true;
+        if (pb.util.global) {
+          pb.util.global.XMLHttpRequest = undefined;
+          pb.util.global.fetch = undefined;
+        }
+      }
+    };
+
+    patchProtobuf(protobuf);
+
+    // Also try to patch nested instances if they exist
+    const possiblePaths = [
+      "@liamcottle/push-receiver/node_modules/protobufjs",
+      "protobufjs"
+    ];
+    
+    for (const p of possiblePaths) {
+      try {
+        const pb = require(p);
+        if (pb && pb !== protobuf) {
+          patchProtobuf(pb);
+        }
+      } catch (e) {}
+    }
+  } catch (e) {
+    // ignore
+  }
 }
 
 const DEFAULT_LISTEN_MS = 120_000;
@@ -286,6 +301,7 @@ export async function startPairingListener(
   authToken: string,
   listenMsInput?: number
 ) {
+  ensureProtobufPatched();
   stopPairingListener(userId);
 
   const listenMs = Math.min(Math.max(listenMsInput ?? DEFAULT_LISTEN_MS, 15_000), MAX_LISTEN_MS);
@@ -372,6 +388,7 @@ export async function startPairingListenerFromFcmCredentials(
   },
   listenMsInput?: number
 ) {
+  ensureProtobufPatched();
   stopPairingListener(userId);
 
   const listenMs = Math.min(Math.max(listenMsInput ?? DEFAULT_LISTEN_MS, 15_000), MAX_LISTEN_MS);

@@ -96,52 +96,60 @@ export async function POST(req: NextRequest) {
     listenMs,
   } = parsed.data;
 
-  let status;
-  if (authToken) {
-    status = await startPairingListener(userId, authToken, listenMs);
-  } else {
-    const parsedCommand = credentialsCommand
-      ? parseCredentialsCommand(credentialsCommand)
-      : null;
+  try {
+    let status;
+    if (authToken) {
+      status = await startPairingListener(userId, authToken, listenMs);
+    } else {
+      const parsedCommand = credentialsCommand
+        ? parseCredentialsCommand(credentialsCommand)
+        : null;
 
-    let resolvedAndroidId = gcmAndroidId || parsedCommand?.gcmAndroidId;
-    let resolvedSecurityToken = gcmSecurityToken || parsedCommand?.gcmSecurityToken;
+      let resolvedAndroidId = gcmAndroidId || parsedCommand?.gcmAndroidId;
+      let resolvedSecurityToken = gcmSecurityToken || parsedCommand?.gcmSecurityToken;
 
-    // If still no credentials, check DB
-    if (!resolvedAndroidId || !resolvedSecurityToken) {
-      const user = await prisma.appUser.findUnique({
-        where: { id: userId },
-        select: { fcmAndroidId: true, fcmSecurityToken: true },
-      });
-      if (user?.fcmAndroidId && user?.fcmSecurityToken) {
-        resolvedAndroidId = user.fcmAndroidId;
-        resolvedSecurityToken = user.fcmSecurityToken;
+      // If still no credentials, check DB
+      if (!resolvedAndroidId || !resolvedSecurityToken) {
+        const user = await prisma.appUser.findUnique({
+          where: { id: userId },
+          select: { fcmAndroidId: true, fcmSecurityToken: true },
+        });
+        if (user?.fcmAndroidId && user?.fcmSecurityToken) {
+          resolvedAndroidId = user.fcmAndroidId;
+          resolvedSecurityToken = user.fcmSecurityToken;
+        }
       }
-    }
 
-    if (!resolvedAndroidId || !resolvedSecurityToken) {
-      return Response.json(
+      if (!resolvedAndroidId || !resolvedSecurityToken) {
+        return Response.json(
+          {
+            error:
+              "Provide authToken OR FCM credentials (gcmAndroidId + gcmSecurityToken) or a valid /credentials add command",
+          },
+          { status: 400 }
+        );
+      }
+
+      status = await startPairingListenerFromFcmCredentials(
+        userId,
         {
-          error:
-            "Provide authToken OR FCM credentials (gcmAndroidId + gcmSecurityToken) or a valid /credentials add command",
+          gcmAndroidId: resolvedAndroidId,
+          gcmSecurityToken: resolvedSecurityToken,
+          steamId: steamId || parsedCommand?.steamId,
+          issuedDate: issuedDate || parsedCommand?.issuedDate,
+          expireDate: expireDate || parsedCommand?.expireDate,
         },
-        { status: 400 }
+        listenMs
       );
     }
-
-    status = await startPairingListenerFromFcmCredentials(
-      userId,
-      {
-        gcmAndroidId: resolvedAndroidId,
-        gcmSecurityToken: resolvedSecurityToken,
-        steamId: steamId || parsedCommand?.steamId,
-        issuedDate: issuedDate || parsedCommand?.issuedDate,
-        expireDate: expireDate || parsedCommand?.expireDate,
-      },
-      listenMs
+    return Response.json({ status });
+  } catch (error) {
+    console.error("Pairing API error:", error);
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 }
     );
   }
-  return Response.json({ status });
 }
 
 export async function DELETE() {
