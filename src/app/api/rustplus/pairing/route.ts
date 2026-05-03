@@ -34,10 +34,16 @@ function parseCredentialsCommand(command: string) {
 
   const gcmAndroidId = map.get("gcm_android_id");
   const gcmSecurityToken = map.get("gcm_security_token");
+  const steamId = map.get("steam_id");
+  const issuedDate = map.get("issued_date");
+  const expireDate = map.get("expire_date");
 
   return {
     gcmAndroidId,
     gcmSecurityToken,
+    steamId,
+    issuedDate: issuedDate ? Number(issuedDate) : undefined,
+    expireDate: expireDate ? Number(expireDate) : undefined,
   };
 }
 
@@ -50,7 +56,20 @@ export async function GET() {
   }
 
   const status = getPairingListenerStatus(userId);
-  return Response.json({ status });
+  const user = await prisma.appUser.findUnique({
+    where: { id: userId },
+    select: { fcmSteamId: true, fcmExpiresAt: true },
+  });
+
+  return Response.json({
+    status,
+    fcm: user
+      ? {
+          steamId: user.fcmSteamId,
+          expiresAt: user.fcmExpiresAt?.toISOString(),
+        }
+      : null,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -71,6 +90,9 @@ export async function POST(req: NextRequest) {
     credentialsCommand,
     gcmAndroidId,
     gcmSecurityToken,
+    steamId,
+    issuedDate,
+    expireDate,
     listenMs,
   } = parsed.data;
 
@@ -112,6 +134,9 @@ export async function POST(req: NextRequest) {
       {
         gcmAndroidId: resolvedAndroidId,
         gcmSecurityToken: resolvedSecurityToken,
+        steamId: steamId || parsedCommand?.steamId,
+        issuedDate: issuedDate || parsedCommand?.issuedDate,
+        expireDate: expireDate || parsedCommand?.expireDate,
       },
       listenMs
     );

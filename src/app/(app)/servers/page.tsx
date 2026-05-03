@@ -47,6 +47,11 @@ interface PairingStatus {
   } | null;
 }
 
+interface FcmInfo {
+  steamId: string | null;
+  expiresAt: string | null;
+}
+
 interface LivePlayer {
   id: string;
   name: string;
@@ -89,6 +94,7 @@ export default function ServersPage() {
   const [startingPairing, setStartingPairing] = useState(false);
   const [manualAuthToken, setManualAuthToken] = useState("");
   const [credentialsCommand, setCredentialsCommand] = useState("");
+  const [fcmInfo, setFcmInfo] = useState<FcmInfo | null>(null);
 
   // Filter & sort state
   const [search, setSearch] = useState("");
@@ -185,10 +191,11 @@ export default function ServersPage() {
   useEffect(() => {
     const loadPairingStatus = async () => {
       try {
-        const { data } = await axios.get<{ status: PairingStatus | null }>(
+        const { data } = await axios.get<{ status: PairingStatus | null; fcm: FcmInfo | null }>(
           "/api/rustplus/pairing"
         );
         setPairingStatus(data.status);
+        setFcmInfo(data.fcm);
       } catch {
         // ignore initial status load errors
       }
@@ -225,10 +232,11 @@ export default function ServersPage() {
     if (isActive) {
       timer = setInterval(async () => {
         try {
-          const { data } = await axios.get<{ status: PairingStatus | null }>(
+          const { data } = await axios.get<{ status: PairingStatus | null; fcm: FcmInfo | null }>(
             "/api/rustplus/pairing"
           );
           setPairingStatus(data.status);
+          if (data.fcm) setFcmInfo(data.fcm);
           if (data.status?.status === "completed") {
             await fetchServers();
             toast.success("Rust+ pairing received and server credentials saved.");
@@ -461,6 +469,23 @@ export default function ServersPage() {
           <CardDescription>
             Login in same tab, return here, then start a 2-minute pairing listener.
           </CardDescription>
+          {fcmInfo?.expiresAt && (
+            <div className={`mt-2 text-xs flex items-center gap-2 p-2 rounded border ${
+              new Date(fcmInfo.expiresAt) < new Date() 
+                ? "bg-destructive/10 border-destructive/20 text-destructive" 
+                : "bg-green-500/10 border-green-500/20 text-green-500"
+            }`}>
+              <Clock size={14} />
+              <span>
+                {new Date(fcmInfo.expiresAt) < new Date() 
+                  ? `FCM Token Expired on ${new Date(fcmInfo.expiresAt).toLocaleDateString()}. Please re-run /credentials add in Discord.`
+                  : `FCM Token valid until ${new Date(fcmInfo.expiresAt).toLocaleDateString()}.`}
+              </span>
+              {fcmInfo.steamId && (
+                <span className="ml-auto opacity-60">Steam: {fcmInfo.steamId}</span>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">

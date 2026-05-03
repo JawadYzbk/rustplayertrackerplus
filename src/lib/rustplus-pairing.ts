@@ -316,7 +316,13 @@ export async function startPairingListener(
 
 export async function startPairingListenerFromFcmCredentials(
   userId: string,
-  credentials: { gcmAndroidId: string; gcmSecurityToken: string },
+  credentials: {
+    gcmAndroidId: string;
+    gcmSecurityToken: string;
+    steamId?: string;
+    issuedDate?: number;
+    expireDate?: number;
+  },
   listenMsInput?: number
 ) {
   stopPairingListener(userId);
@@ -347,6 +353,9 @@ export async function startPairingListenerFromFcmCredentials(
     data: {
       fcmAndroidId: credentials.gcmAndroidId,
       fcmSecurityToken: credentials.gcmSecurityToken,
+      fcmSteamId: credentials.steamId,
+      fcmIssuedAt: credentials.issuedDate ? new Date(credentials.issuedDate * 1000) : undefined,
+      fcmExpiresAt: credentials.expireDate ? new Date(credentials.expireDate * 1000) : undefined,
     },
   }).catch(() => { /* ignore if user doesn't exist yet */ });
 

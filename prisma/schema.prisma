@@ -16,6 +16,9 @@ model AppUser {
   // Persistent FCM Credentials for Rust+ Pairing
   fcmAndroidId     String?
   fcmSecurityToken String?
+  fcmSteamId       String?
+  fcmIssuedAt      DateTime?
+  fcmExpiresAt     DateTime?
 
   servers     Server[]
   players     Player[]
