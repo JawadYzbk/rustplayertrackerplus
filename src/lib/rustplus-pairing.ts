@@ -23,6 +23,12 @@ interface PairingServerPayload {
   playerToken: string;
 }
 
+interface PushReceiverClientLike {
+  on(event: "ON_DATA_RECEIVED", listener: (data: unknown) => void): void;
+  connect(): Promise<void>;
+  destroy(): void;
+}
+
 interface ListenerState {
   userId: string;
   startedAt: number;
@@ -196,17 +202,6 @@ export async function startPairingListener(
         gcm: { androidId: string; securityToken: string };
       }>;
     };
-    const pushReceiverClientModule = (await import("@liamcottle/push-receiver/src/client")) as {
-      default: new (
-        androidId: string,
-        securityToken: string,
-        appIds: string[]
-      ) => {
-        on(event: "ON_DATA_RECEIVED", listener: (data: unknown) => void): void;
-        connect(): Promise<void>;
-        destroy(): void;
-      };
-    };
 
     const fcmCredentials = await androidFcmModule.register(
       FCM_API_KEY,
@@ -219,9 +214,54 @@ export async function startPairingListener(
     const expoPushToken = await getExpoPushToken(fcmCredentials.fcm.token);
     await registerWithRustPlus(authToken, expoPushToken);
 
+    await startPairingListenerFromFcmCredentials(
+      userId,
+      {
+        gcmAndroidId: fcmCredentials.gcm.androidId,
+        gcmSecurityToken: fcmCredentials.gcm.securityToken,
+      },
+      listenMs
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Rust+ pairing listener failed";
+    setState(userId, { status: "error", message });
+  }
+
+  return getPairingListenerStatus(userId);
+}
+
+export async function startPairingListenerFromFcmCredentials(
+  userId: string,
+  credentials: { gcmAndroidId: string; gcmSecurityToken: string },
+  listenMsInput?: number
+) {
+  stopPairingListener(userId);
+
+  const listenMs = Math.min(Math.max(listenMsInput ?? DEFAULT_LISTEN_MS, 15_000), MAX_LISTEN_MS);
+  const startedAt = Date.now();
+  const expiresAt = startedAt + listenMs;
+
+  listeners.set(userId, {
+    userId,
+    startedAt,
+    expiresAt,
+    status: "starting",
+    message: "Starting listener with provided FCM credentials...",
+    lastPairing: null,
+  });
+
+  try {
+    const pushReceiverClientModule = (await import("@liamcottle/push-receiver/src/client")) as {
+      default: new (
+        androidId: string,
+        securityToken: string,
+        appIds: string[]
+      ) => PushReceiverClientLike;
+    };
+
     const client = new pushReceiverClientModule.default(
-      fcmCredentials.gcm.androidId,
-      fcmCredentials.gcm.securityToken,
+      credentials.gcmAndroidId,
+      credentials.gcmSecurityToken,
       []
     );
 
@@ -268,7 +308,7 @@ export async function startPairingListener(
 
     await client.connect();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Rust+ pairing listener failed";
+    const message = error instanceof Error ? error.message : "FCM pairing listener failed";
     setState(userId, { status: "error", message });
   }
 

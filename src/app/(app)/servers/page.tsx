@@ -87,6 +87,7 @@ export default function ServersPage() {
   const [pairingStatus, setPairingStatus] = useState<PairingStatus | null>(null);
   const [startingPairing, setStartingPairing] = useState(false);
   const [manualAuthToken, setManualAuthToken] = useState("");
+  const [credentialsCommand, setCredentialsCommand] = useState("");
 
   // Filter & sort state
   const [search, setSearch] = useState("");
@@ -121,6 +122,29 @@ export default function ServersPage() {
         axios.isAxiosError(error)
           ? error.response?.data?.error || "Failed to start Rust+ listener"
           : "Failed to start Rust+ listener"
+      );
+    } finally {
+      setStartingPairing(false);
+    }
+  }
+
+  async function startPairingListenerWithCredentials(command: string) {
+    setStartingPairing(true);
+    try {
+      const { data } = await axios.post<{ status: PairingStatus | null }>(
+        "/api/rustplus/pairing",
+        {
+          credentialsCommand: command,
+          listenMs: 120000,
+        }
+      );
+      setPairingStatus(data.status);
+      toast.success("FCM listener started. Pair your server in-game now.");
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to start FCM listener"
+          : "Failed to start FCM listener"
       );
     } finally {
       setStartingPairing(false);
@@ -435,6 +459,21 @@ export default function ServersPage() {
                   Stop Listener
                 </Button>
               )}
+          </div>
+          <div className="flex flex-col gap-2 md:flex-row">
+            <Input
+              value={credentialsCommand}
+              onChange={(e) => setCredentialsCommand(e.target.value)}
+              placeholder="/credentials add gcm_android_id:... gcm_security_token:... steam_id:..."
+              className="md:max-w-3xl"
+            />
+            <Button
+              variant="secondary"
+              onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
+              disabled={startingPairing || credentialsCommand.trim().length === 0}
+            >
+              Use FCM Credentials
+            </Button>
           </div>
         </CardContent>
       </Card>
