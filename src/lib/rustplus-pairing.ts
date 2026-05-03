@@ -15,8 +15,11 @@ function ensureProtobufPatched() {
   // Polyfill XMLHttpRequest for libraries that might need it in Node.js (like axios or request)
   if (typeof XMLHttpRequest === "undefined") {
     try {
-      const { XMLHttpRequest: XHR } = require("xmlhttprequest");
-      (global as any).XMLHttpRequest = XHR;
+      const xhrModule = require("xmlhttprequest");
+      const XHR = xhrModule.XMLHttpRequest || (typeof xhrModule === 'function' ? xhrModule : null);
+      if (XHR) {
+        (global as any).XMLHttpRequest = XHR;
+      }
     } catch {
       // ignore
     }
@@ -47,10 +50,6 @@ function ensureProtobufPatched() {
 
       if (pb.util) {
         pb.util.isNode = true;
-        if (pb.util.global) {
-          pb.util.global.XMLHttpRequest = undefined;
-          pb.util.global.fetch = undefined;
-        }
       }
     };
 
