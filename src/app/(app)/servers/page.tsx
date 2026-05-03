@@ -86,6 +86,7 @@ export default function ServersPage() {
   const [savingRustPlus, setSavingRustPlus] = useState(false);
   const [pairingStatus, setPairingStatus] = useState<PairingStatus | null>(null);
   const [startingPairing, setStartingPairing] = useState(false);
+  const [manualAuthToken, setManualAuthToken] = useState("");
 
   // Filter & sort state
   const [search, setSearch] = useState("");
@@ -150,6 +151,14 @@ export default function ServersPage() {
   }, []);
 
   useEffect(() => {
+    const token = window.sessionStorage.getItem("rustplus_auth_token");
+    if (!token) return;
+    window.sessionStorage.removeItem("rustplus_auth_token");
+    setManualAuthToken(token);
+    void startPairingListener(token);
+  }, []);
+
+  useEffect(() => {
     if (!liveModalServer) {
       return;
     }
@@ -160,18 +169,6 @@ export default function ServersPage() {
 
     return () => window.clearInterval(timer);
   }, [liveModalServer]);
-
-  useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== "RUSTPLUS_AUTH_TOKEN" || !event.data?.token) return;
-
-      void startPairingListener(String(event.data.token));
-    };
-
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -311,14 +308,11 @@ export default function ServersPage() {
   };
 
   const handleConnectRustPlus = () => {
-    const popup = window.open(
-      "/rustplus/connect",
-      "rustplus-connect",
-      "width=520,height=720"
-    );
-    if (!popup) {
-      toast.error("Popup blocked. Please allow popups for this site.");
-    }
+    const callbackUrl = `${window.location.origin}/rustplus/connect/callback`;
+    const rustAppUrl = `https://companion-rust.facepunch.com/app?returnUrl=${encodeURIComponent(
+      callbackUrl
+    )}`;
+    window.location.href = rustAppUrl;
   };
 
   const handleStopPairing = async () => {
@@ -411,17 +405,29 @@ export default function ServersPage() {
         <CardHeader>
           <CardTitle>Rust+ Client Pairing</CardTitle>
           <CardDescription>
-            Sign in to Rust+, then we listen for a pairing event for 2 minutes and save creds.
+            Login in same tab, return here, then start a 2-minute pairing listener.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            {pairingStatus ? pairingStatus.message : "No active pairing listener."}
+            {pairingStatus ? pairingStatus.message : "No active pairing listener. Token required."}
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleConnectRustPlus} disabled={startingPairing}>
+          <div className="flex flex-col gap-2 md:flex-row">
+            <Button onClick={handleConnectRustPlus}>
+              Login Rust+ (Same Tab)
+            </Button>
+            <Input
+              value={manualAuthToken}
+              onChange={(e) => setManualAuthToken(e.target.value)}
+              placeholder="Paste Rust+ Auth Token (if callback did not auto-capture)"
+              className="md:max-w-md"
+            />
+            <Button
+              onClick={() => void startPairingListener(manualAuthToken.trim())}
+              disabled={startingPairing || manualAuthToken.trim().length === 0}
+            >
               {startingPairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Connect Rust+
+              Start Listener
             </Button>
             {pairingStatus &&
               (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
