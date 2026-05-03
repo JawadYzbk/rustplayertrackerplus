@@ -10,6 +10,7 @@ import {
 } from "@/lib/rustplus-pairing";
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -81,8 +82,20 @@ export async function POST(req: NextRequest) {
       ? parseCredentialsCommand(credentialsCommand)
       : null;
 
-    const resolvedAndroidId = gcmAndroidId || parsedCommand?.gcmAndroidId;
-    const resolvedSecurityToken = gcmSecurityToken || parsedCommand?.gcmSecurityToken;
+    let resolvedAndroidId = gcmAndroidId || parsedCommand?.gcmAndroidId;
+    let resolvedSecurityToken = gcmSecurityToken || parsedCommand?.gcmSecurityToken;
+
+    // If still no credentials, check DB
+    if (!resolvedAndroidId || !resolvedSecurityToken) {
+      const user = await prisma.appUser.findUnique({
+        where: { id: userId },
+        select: { fcmAndroidId: true, fcmSecurityToken: true },
+      });
+      if (user?.fcmAndroidId && user?.fcmSecurityToken) {
+        resolvedAndroidId = user.fcmAndroidId;
+        resolvedSecurityToken = user.fcmSecurityToken;
+      }
+    }
 
     if (!resolvedAndroidId || !resolvedSecurityToken) {
       return Response.json(

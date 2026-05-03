@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, Server as ServerIcon, Plus, Loader2, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
+import { Trash2, Server as ServerIcon, Plus, Loader2, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search, Terminal, Wifi, WifiOff, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface Server {
   id: string;
@@ -38,6 +38,7 @@ interface PairingStatus {
   expiresAt: number;
   status: "starting" | "listening" | "completed" | "expired" | "error";
   message: string;
+  logs?: Array<{ timestamp: number; level: "info" | "warn" | "error" | "success"; message: string }>;
   lastPairing: {
     id: string;
     name?: string;
@@ -151,6 +152,28 @@ export default function ServersPage() {
     }
   }
 
+  async function startPairingWithSavedCredentials() {
+    setStartingPairing(true);
+    try {
+      const { data } = await axios.post<{ status: PairingStatus | null }>(
+        "/api/rustplus/pairing",
+        {
+          listenMs: 120000,
+        }
+      );
+      setPairingStatus(data.status);
+      toast.success("FCM listener started using saved credentials.");
+    } catch (error) {
+      toast.error(
+        axios.isAxiosError(error)
+          ? error.response?.data?.error || "Failed to start FCM listener"
+          : "Failed to start FCM listener"
+      );
+    } finally {
+      setStartingPairing(false);
+    }
+  }
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void fetchServers();
@@ -220,6 +243,13 @@ export default function ServersPage() {
       if (timer) clearInterval(timer);
     };
   }, [pairingStatus?.status]);
+
+  useEffect(() => {
+    if (pairingStatus?.logs?.length) {
+      const el = document.getElementById("fcm-console-end");
+      el?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [pairingStatus?.logs]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -469,12 +499,75 @@ export default function ServersPage() {
             />
             <Button
               variant="secondary"
-              onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
-              disabled={startingPairing || credentialsCommand.trim().length === 0}
+              onClick={() => {
+                if (credentialsCommand.trim()) {
+                  void startPairingListenerWithCredentials(credentialsCommand.trim());
+                } else {
+                  void startPairingWithSavedCredentials();
+                }
+              }}
+              disabled={startingPairing}
             >
-              Use FCM Credentials
+              {credentialsCommand.trim() ? "Use FCM Credentials" : "Use Saved FCM Credentials"}
             </Button>
           </div>
+
+          {pairingStatus && (
+            <div className="mt-4 rounded-lg border bg-black/90 p-4 font-mono text-[10px] leading-relaxed text-zinc-300 shadow-inner overflow-hidden flex flex-col h-[200px]">
+              <div className="flex items-center justify-between mb-2 border-b border-zinc-800 pb-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="font-bold text-zinc-500 uppercase tracking-widest">FCM Console</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    {pairingStatus.status === "listening" ? (
+                      <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span className="text-green-500 text-[9px] uppercase">Listening</span>
+                      </>
+                    ) : pairingStatus.status === "completed" ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-green-500" />
+                        <span className="text-green-500 text-[9px] uppercase">Completed</span>
+                      </>
+                    ) : pairingStatus.status === "error" ? (
+                      <>
+                        <AlertCircle className="w-3 h-3 text-red-500" />
+                        <span className="text-red-500 text-[9px] uppercase">Error</span>
+                      </>
+                    ) : (
+                      <span className="text-zinc-500 text-[9px] uppercase">{pairingStatus.status}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto space-y-1 pr-2 scrollbar-thin scrollbar-thumb-zinc-800">
+                {pairingStatus.logs?.length ? (
+                  pairingStatus.logs.map((log, i) => (
+                    <div key={i} className="flex gap-2">
+                      <span className="text-zinc-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                      <span className={
+                        log.level === 'error' ? 'text-red-400' : 
+                        log.level === 'warn' ? 'text-amber-400' : 
+                        log.level === 'success' ? 'text-green-400' : 
+                        'text-blue-300'
+                      }>
+                        {log.message}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-zinc-600 italic">Waiting for activity...</div>
+                )}
+                <div id="fcm-console-end" />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

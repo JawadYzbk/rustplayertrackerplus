@@ -13,6 +13,10 @@ model AppUser {
   id        String   @id
   createdAt DateTime @default(now())
 
+  // Persistent FCM Credentials for Rust+ Pairing
+  fcmAndroidId     String?
+  fcmSecurityToken String?
+
   servers     Server[]
   players     Player[]
   sessions    Session[]

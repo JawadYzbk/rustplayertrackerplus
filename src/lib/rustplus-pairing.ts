@@ -3,6 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { ensureAppUser } from "@/lib/current-user";
 import { randomUUID } from "crypto";
 
+// Polyfill XMLHttpRequest for push-receiver if needed in Node.js environment
+if (typeof XMLHttpRequest === "undefined") {
+  try {
+    const { XMLHttpRequest: XHR } = require("xmlhttprequest");
+    (global as any).XMLHttpRequest = XHR;
+  } catch {
+    // ignore if package not found, we'll try to handle it or user can install it
+  }
+}
+
 const DEFAULT_LISTEN_MS = 120_000;
 const MAX_LISTEN_MS = 300_000;
 
@@ -29,12 +39,19 @@ interface PushReceiverClientLike {
   destroy(): void;
 }
 
+interface LogEntry {
+  timestamp: number;
+  level: "info" | "warn" | "error" | "success";
+  message: string;
+}
+
 interface ListenerState {
   userId: string;
   startedAt: number;
   expiresAt: number;
   status: "starting" | "listening" | "completed" | "expired" | "error";
   message: string;
+  logs: LogEntry[];
   lastPairing: PairingServerPayload | null;
   stop?: () => void;
 }
@@ -61,6 +78,27 @@ function registerWithRustPlus(authToken: string, expoPushToken: string) {
     PushKind: 3,
     PushToken: expoPushToken,
   });
+}
+
+async function findBattleMetricsId(ip: string, port: string | number): Promise<string | null> {
+  try {
+    const response = await axios.get("https://api.battlemetrics.com/servers", {
+      params: {
+        "filter[address]": ip,
+        "filter[port]": port,
+        "filter[game]": "rust",
+        "page[size]": 1,
+      },
+    });
+
+    const servers = response.data.data;
+    if (servers && servers.length > 0) {
+      return servers[0].id as string;
+    }
+  } catch (error) {
+    console.error("Failed to find BattleMetrics ID for server:", ip, port, error);
+  }
+  return null;
 }
 
 function extractServerPairing(value: unknown): PairingServerPayload | null {
@@ -90,14 +128,21 @@ function extractServerPairing(value: unknown): PairingServerPayload | null {
 async function upsertServerFromPairing(userId: string, pairing: PairingServerPayload) {
   await ensureAppUser(userId);
 
+  // Rust+ pairing payload doesn't contain BattleMetrics ID.
+  // We must map IP/Port to BM ID.
+  const bmId = await findBattleMetricsId(pairing.ip, pairing.port);
+  if (!bmId) {
+    throw new Error(`Could not find BattleMetrics server for ${pairing.ip}:${pairing.port}`);
+  }
+
   const numericPort = Number(pairing.port);
   const existingById = await prisma.server.findUnique({
-    where: { userId_id: { userId, id: pairing.id } },
+    where: { userId_id: { userId, id: bmId } },
   });
 
   if (existingById) {
     await prisma.server.update({
-      where: { userId_id: { userId, id: pairing.id } },
+      where: { userId_id: { userId, id: bmId } },
       data: {
         name: pairing.name || existingById.name,
         rustPlusIp: pairing.ip,
@@ -122,6 +167,9 @@ async function upsertServerFromPairing(userId: string, pairing: PairingServerPay
     await prisma.server.update({
       where: { userId_id: { userId, id: existingByEndpoint.id } },
       data: {
+        id: bmId, // migrate to BM ID if it was added manually with a different ID? 
+        // Actually prisma doesn't allow changing ID easily if it's part of PK.
+        // But here we want to ensure it's mapped to BM ID.
         name: pairing.name || existingByEndpoint.name,
         rustPlusPlayerId: pairing.playerId,
         rustPlusPlayerToken: pairing.playerToken,
@@ -133,7 +181,7 @@ async function upsertServerFromPairing(userId: string, pairing: PairingServerPay
   await prisma.server.create({
     data: {
       userId,
-      id: pairing.id,
+      id: bmId,
       name: pairing.name || `Rust+ ${pairing.ip}:${pairing.port}`,
       rustPlusIp: pairing.ip,
       rustPlusPort: Number.isFinite(numericPort) ? numericPort : null,
@@ -146,7 +194,24 @@ async function upsertServerFromPairing(userId: string, pairing: PairingServerPay
 function setState(userId: string, patch: Partial<ListenerState>) {
   const current = listeners.get(userId);
   if (!current) return;
-  listeners.set(userId, { ...current, ...patch });
+
+  const logs = [...current.logs];
+  if (patch.message && patch.message !== current.message) {
+    logs.push({
+      timestamp: Date.now(),
+      level: patch.status === "error" ? "error" : patch.status === "completed" ? "success" : "info",
+      message: patch.message,
+    });
+  }
+
+  listeners.set(userId, { ...current, ...patch, logs });
+}
+
+function addLog(userId: string, level: LogEntry["level"], message: string) {
+  const current = listeners.get(userId);
+  if (!current) return;
+  const logs = [...current.logs, { timestamp: Date.now(), level, message }];
+  listeners.set(userId, { ...current, logs });
 }
 
 export function getPairingListenerStatus(userId: string) {
@@ -157,6 +222,7 @@ export function getPairingListenerStatus(userId: string) {
     expiresAt: state.expiresAt,
     status: state.status,
     message: state.message,
+    logs: state.logs,
     lastPairing: state.lastPairing,
   };
 }
@@ -185,6 +251,9 @@ export async function startPairingListener(
     expiresAt,
     status: "starting",
     message: "Registering Rust+ pairing listener...",
+    logs: [
+      { timestamp: startedAt, level: "info", message: "Starting FCM registration flow..." },
+    ],
     lastPairing: null,
   });
 
@@ -211,8 +280,23 @@ export async function startPairingListener(
       FCM_ANDROID_PACKAGE_NAME,
       FCM_ANDROID_PACKAGE_CERT
     );
+
+    addLog(userId, "success", `FCM Registered. ID: ${fcmCredentials.gcm.androidId}`);
+
+    // Persist FCM credentials to user
+    await prisma.appUser.update({
+      where: { id: userId },
+      data: {
+        fcmAndroidId: fcmCredentials.gcm.androidId,
+        fcmSecurityToken: fcmCredentials.gcm.securityToken,
+      },
+    });
+
     const expoPushToken = await getExpoPushToken(fcmCredentials.fcm.token);
+    addLog(userId, "info", "Obtained Expo Push Token.");
+
     await registerWithRustPlus(authToken, expoPushToken);
+    addLog(userId, "info", "Registered with Rust+ companion API.");
 
     await startPairingListenerFromFcmCredentials(
       userId,
@@ -247,8 +331,24 @@ export async function startPairingListenerFromFcmCredentials(
     expiresAt,
     status: "starting",
     message: "Starting listener with provided FCM credentials...",
+    logs: [
+      {
+        timestamp: startedAt,
+        level: "info",
+        message: `Connecting to FCM with ID ${credentials.gcmAndroidId.substring(0, 8)}...`,
+      },
+    ],
     lastPairing: null,
   });
+
+  // Persist these manual credentials if they were provided
+  await prisma.appUser.update({
+    where: { id: userId },
+    data: {
+      fcmAndroidId: credentials.gcmAndroidId,
+      fcmSecurityToken: credentials.gcmSecurityToken,
+    },
+  }).catch(() => { /* ignore if user doesn't exist yet */ });
 
   try {
     const pushReceiverClientModule = (await import("@liamcottle/push-receiver/src/client")) as {
@@ -279,34 +379,49 @@ export async function startPairingListenerFromFcmCredentials(
       setState(userId, { status: finalStatus, message });
     };
 
+    const current = listeners.get(userId);
     listeners.set(userId, {
       userId,
       startedAt,
       expiresAt,
       status: "listening",
       message: "Listening for Rust+ pairing notification...",
+      logs: current?.logs || [],
       lastPairing: null,
       stop: () => cleanup("expired", "Pairing listener stopped."),
     });
 
     client.on("ON_DATA_RECEIVED", async (data) => {
+      addLog(userId, "info", "Push notification received.");
       const pairing = extractServerPairing(data);
-      if (!pairing) return;
+      if (!pairing) {
+        addLog(userId, "warn", "Received notification but no server pairing found.");
+        return;
+      }
 
-      await upsertServerFromPairing(userId, pairing);
-      setState(userId, {
-        lastPairing: pairing,
-        status: "completed",
-        message: `Paired server ${pairing.name || pairing.id} and saved credentials.`,
-      });
-      cleanup("completed", `Paired server ${pairing.name || pairing.id}.`);
+      addLog(userId, "info", `Pairing found for ${pairing.ip}:${pairing.port}. Mapping to BM...`);
+
+      try {
+        await upsertServerFromPairing(userId, pairing);
+        setState(userId, {
+          lastPairing: pairing,
+          status: "completed",
+          message: `Paired server ${pairing.name || pairing.id} and saved credentials.`,
+        });
+        cleanup("completed", `Paired server ${pairing.name || pairing.id}.`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to save server pairing";
+        addLog(userId, "error", msg);
+      }
     });
 
     timer = setTimeout(() => {
       cleanup("expired", "Pairing window expired before receiving a server pairing.");
     }, listenMs);
 
+    addLog(userId, "info", "FCM Socket connecting...");
     await client.connect();
+    addLog(userId, "success", "FCM Socket connected and listening.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "FCM pairing listener failed";
     setState(userId, { status: "error", message });
