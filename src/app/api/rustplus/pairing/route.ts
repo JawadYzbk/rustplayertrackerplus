@@ -11,6 +11,8 @@ import {
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 const StartPairingSchema = z.object({
   authToken: z.string().min(1).optional(),
   credentialsCommand: z.string().min(1).optional(),
