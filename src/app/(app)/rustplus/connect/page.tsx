@@ -15,7 +15,11 @@ export default function RustPlusConnectPage() {
   const [status, setStatus] = useState("Opening Rust+ login...");
 
   useEffect(() => {
-    const popup = window.open("https://companion-rust.facepunch.com/login", "_blank");
+    const callbackUrl = `${window.location.origin}/rustplus/connect/callback`;
+    const rustAppUrl = `https://companion-rust.facepunch.com/app?returnUrl=${encodeURIComponent(
+      callbackUrl
+    )}`;
+    const popup = window.open(rustAppUrl, "_blank");
     if (!popup) {
       return;
     }
@@ -35,6 +39,21 @@ export default function RustPlusConnectPage() {
           ReactNativeWebView?: { postMessage: (message: string) => void };
         };
 
+        // Path 1: If returnUrl works and user gets redirected back to our origin, read token from query.
+        if (popupWindow.location.origin === window.location.origin) {
+          const token = new URLSearchParams(popupWindow.location.search).get("token");
+          if (token && window.opener) {
+            window.opener.postMessage(
+              { type: "RUSTPLUS_AUTH_TOKEN", token },
+              window.location.origin
+            );
+            setStatus("Rust+ callback received. Returning to app...");
+            finish();
+            return;
+          }
+        }
+
+        // Path 2 (fallback): emulate Rust+ app bridge and capture Token via ReactNativeWebView.postMessage.
         if (!popupWindow.ReactNativeWebView) {
           popupWindow.ReactNativeWebView = {
             postMessage: (message: string) => {
