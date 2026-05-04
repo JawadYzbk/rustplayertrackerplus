@@ -2,77 +2,9 @@ import axios from "axios";
 import { prisma } from "@/lib/prisma";
 import { ensureAppUser } from "@/lib/current-user";
 import { randomUUID } from "crypto";
-import * as protobuf from "protobufjs";
-import fs from "fs";
+import { spawn } from "child_process";
 import path from "path";
 
-let isPatched = false;
-
-function ensureProtobufPatched() {
-  if (isPatched) return;
-  isPatched = true;
-
-  // Polyfill XMLHttpRequest for libraries that might need it in Node.js (like axios or request)
-  if (typeof XMLHttpRequest === "undefined") {
-    try {
-      const xhrModule = require("xmlhttprequest");
-      const XHR = xhrModule.XMLHttpRequest || (typeof xhrModule === 'function' ? xhrModule : null);
-      if (XHR) {
-        (global as any).XMLHttpRequest = XHR;
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  // Patch top-level protobufjs
-  try {
-    const patchProtobuf = (pb: any) => {
-      const oldLoad = pb.load;
-      pb.load = function (filename: string, callback: any) {
-        if (typeof filename === "string" && (filename.endsWith(".proto") || filename.includes(".proto"))) {
-          try {
-            const resolvedPath = path.resolve(filename);
-            if (fs.existsSync(resolvedPath)) {
-              const root = pb.loadSync(resolvedPath);
-              if (callback) {
-                callback(null, root);
-                return;
-              }
-              return Promise.resolve(root);
-            }
-          } catch (err) {
-            // fallback
-          }
-        }
-        return oldLoad.apply(this, arguments as any);
-      };
-
-      if (pb.util) {
-        pb.util.isNode = true;
-      }
-    };
-
-    patchProtobuf(protobuf);
-
-    // Also try to patch nested instances if they exist
-    const possiblePaths = [
-      "@liamcottle/push-receiver/node_modules/protobufjs",
-      "protobufjs"
-    ];
-    
-    for (const p of possiblePaths) {
-      try {
-        const pb = require(p);
-        if (pb && pb !== protobuf) {
-          patchProtobuf(pb);
-        }
-      } catch (e) {}
-    }
-  } catch (e) {
-    // ignore
-  }
-}
 
 const DEFAULT_LISTEN_MS = 120_000;
 const MAX_LISTEN_MS = 300_000;
@@ -92,12 +24,6 @@ interface PairingServerPayload {
   port: string | number;
   playerId: string;
   playerToken: string;
-}
-
-interface PushReceiverClientLike {
-  on(event: "ON_DATA_RECEIVED", listener: (data: unknown) => void): void;
-  connect(): Promise<void>;
-  destroy(): void;
 }
 
 interface LogEntry {
@@ -300,7 +226,6 @@ export async function startPairingListener(
   authToken: string,
   listenMsInput?: number
 ) {
-  ensureProtobufPatched();
   stopPairingListener(userId);
 
   const listenMs = Math.min(Math.max(listenMsInput ?? DEFAULT_LISTEN_MS, 15_000), MAX_LISTEN_MS);
@@ -387,7 +312,6 @@ export async function startPairingListenerFromFcmCredentials(
   },
   listenMsInput?: number
 ) {
-  ensureProtobufPatched();
   stopPairingListener(userId);
 
   const listenMs = Math.min(Math.max(listenMsInput ?? DEFAULT_LISTEN_MS, 15_000), MAX_LISTEN_MS);
@@ -423,77 +347,84 @@ export async function startPairingListenerFromFcmCredentials(
   }).catch(() => { /* ignore if user doesn't exist yet */ });
 
   try {
-    const pushReceiverClientModule = (await import("@liamcottle/push-receiver/src/client")) as {
-      default: new (
-        androidId: string,
-        securityToken: string,
-        appIds: string[]
-      ) => PushReceiverClientLike;
-    };
+    const scriptPath = path.resolve(process.cwd(), "scripts/fcm-listener.js");
 
-    const client = new pushReceiverClientModule.default(
-      credentials.gcmAndroidId,
-      credentials.gcmSecurityToken,
-      []
-    );
+    const child = spawn(process.execPath, [scriptPath], {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: process.env,
+    });
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const cleanup = (finalStatus: ListenerState["status"], message: string) => {
-      if (timer) {
-        clearTimeout(timer);
-        timer = null;
+    // Send credentials to child via stdin
+    child.stdin.write(JSON.stringify({ androidId: credentials.gcmAndroidId, securityToken: credentials.gcmSecurityToken, listenMs }));
+    child.stdin.end();
+
+    let lineBuffer = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      lineBuffer += chunk.toString("utf8");
+      const lines = lineBuffer.split("\n");
+      lineBuffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line) as { type: string; level?: string; message?: string; pairing?: PairingServerPayload; reason?: string };
+
+          if (msg.type === "log" && msg.message) {
+            addLog(userId, (msg.level as LogEntry["level"]) || "info", msg.message);
+          } else if (msg.type === "connected" && msg.message) {
+            addLog(userId, "success", msg.message);
+            setState(userId, { status: "listening", message: "Listening for Rust+ pairing notification..." });
+          } else if (msg.type === "pairing" && msg.pairing) {
+            const pairing = msg.pairing;
+            addLog(userId, "info", `Pairing found for ${pairing.ip}:${pairing.port}. Mapping to BattleMetrics...`);
+            upsertServerFromPairing(userId, pairing)
+              .then(() => {
+                setState(userId, {
+                  lastPairing: pairing,
+                  status: "completed",
+                  message: `Paired server ${pairing.name || pairing.id} and saved credentials.`,
+                });
+              })
+              .catch((err: Error) => addLog(userId, "error", err.message || "Failed to save pairing"));
+          } else if (msg.type === "stopped") {
+            setState(userId, { status: "expired", message: "Pairing window expired." });
+          } else if (msg.type === "error" && msg.message) {
+            setState(userId, { status: "error", message: msg.message });
+          }
+        } catch {
+          // ignore malformed lines
+        }
       }
-      try {
-        client.destroy();
-      } catch {
-        // ignore destroy errors
+    });
+
+    child.stderr.on("data", (chunk: Buffer) => {
+      const text = chunk.toString("utf8").trim();
+      if (text) console.error("[FCM child]:", text);
+    });
+
+    child.on("exit", (code) => {
+      const state = listeners.get(userId);
+      if (state && state.status === "listening") {
+        setState(userId, { status: "expired", message: "FCM listener process exited." });
       }
-      setState(userId, { status: finalStatus, message });
-    };
+    });
 
     const current = listeners.get(userId);
     listeners.set(userId, {
       userId,
       startedAt,
       expiresAt,
-      status: "listening",
-      message: "Listening for Rust+ pairing notification...",
+      status: "starting",
+      message: "Starting listener with provided FCM credentials...",
       logs: current?.logs || [],
       lastPairing: null,
-      stop: () => cleanup("expired", "Pairing listener stopped."),
+      stop: () => {
+        try { child.kill(); } catch {}
+        setState(userId, { status: "expired", message: "Pairing listener stopped." });
+      },
     });
 
-    client.on("ON_DATA_RECEIVED", async (data) => {
-      addLog(userId, "info", "Push notification received.");
-      const pairing = extractServerPairing(data);
-      if (!pairing) {
-        addLog(userId, "warn", "Received notification but no server pairing found.");
-        return;
-      }
-
-      addLog(userId, "info", `Pairing found for ${pairing.ip}:${pairing.port}. Mapping to BM...`);
-
-      try {
-        await upsertServerFromPairing(userId, pairing);
-        setState(userId, {
-          lastPairing: pairing,
-          status: "completed",
-          message: `Paired server ${pairing.name || pairing.id} and saved credentials.`,
-        });
-        cleanup("completed", `Paired server ${pairing.name || pairing.id}.`);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to save server pairing";
-        addLog(userId, "error", msg);
-      }
-    });
-
-    timer = setTimeout(() => {
-      cleanup("expired", "Pairing window expired before receiving a server pairing.");
-    }, listenMs);
-
-    addLog(userId, "info", "FCM Socket connecting...");
-    await client.connect();
-    addLog(userId, "success", "FCM Socket connected and listening.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "FCM pairing listener failed";
     setState(userId, { status: "error", message });
