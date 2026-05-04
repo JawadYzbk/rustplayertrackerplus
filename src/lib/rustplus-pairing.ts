@@ -97,19 +97,23 @@ process.stdin.on('end', async () => {
 
 let _cachedScriptPath: string | null = null;
 
+function buildScriptContent(): string {
+  // Resolve absolute paths to all required modules from this process's node_modules.
+  // When the script runs from /tmp it has no node_modules, so we must hardcode the paths.
+  const clientPath = require.resolve("@liamcottle/push-receiver/src/client");
+  
+  return FCM_LISTENER_SCRIPT
+    .replace("require('@liamcottle/push-receiver/src/client')", `require(${JSON.stringify(clientPath)})`);
+}
+
 function getScriptPath(): string {
   if (_cachedScriptPath) return _cachedScriptPath;
 
-  // First try the repo scripts directory (works locally and if deployed with file)
-  const repoScript = path.resolve(process.cwd(), "scripts/fcm-listener.js");
-  if (fs.existsSync(repoScript)) {
-    _cachedScriptPath = repoScript;
-    return repoScript;
-  }
+  const scriptContent = buildScriptContent();
 
-  // Fall back to writing to tmpdir — works in any deployment environment
+  // Write to a consistent location in tmpdir (overwrite to pick up any updates)
   const tmpScript = path.join(os.tmpdir(), "fcm-listener-rusttracker.js");
-  fs.writeFileSync(tmpScript, FCM_LISTENER_SCRIPT, "utf8");
+  fs.writeFileSync(tmpScript, scriptContent, "utf8");
   _cachedScriptPath = tmpScript;
   return tmpScript;
 }
