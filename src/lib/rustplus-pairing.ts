@@ -358,6 +358,22 @@ export async function startPairingListenerFromFcmCredentials(
     child.stdin.write(JSON.stringify({ androidId: credentials.gcmAndroidId, securityToken: credentials.gcmSecurityToken, listenMs }));
     child.stdin.end();
 
+    // Set up state with stop function FIRST, before attaching data handlers
+    const current = listeners.get(userId);
+    listeners.set(userId, {
+      userId,
+      startedAt,
+      expiresAt,
+      status: "starting",
+      message: "Starting listener with provided FCM credentials...",
+      logs: current?.logs || [],
+      lastPairing: null,
+      stop: () => {
+        try { child.kill(); } catch {}
+        setState(userId, { status: "expired", message: "Pairing listener stopped." });
+      },
+    });
+
     let lineBuffer = "";
 
     child.stdout.on("data", (chunk: Buffer) => {
@@ -400,29 +416,25 @@ export async function startPairingListenerFromFcmCredentials(
 
     child.stderr.on("data", (chunk: Buffer) => {
       const text = chunk.toString("utf8").trim();
-      if (text) console.error("[FCM child]:", text);
+      if (text) {
+        console.error("[FCM child]:", text);
+        addLog(userId, "error", `[child] ${text}`);
+      }
+    });
+
+    child.on("error", (err) => {
+      addLog(userId, "error", `Failed to spawn FCM listener: ${err.message}`);
+      setState(userId, { status: "error", message: err.message });
     });
 
     child.on("exit", (code) => {
       const state = listeners.get(userId);
-      if (state && state.status === "listening") {
-        setState(userId, { status: "expired", message: "FCM listener process exited." });
+      if (state && (state.status === "listening" || state.status === "starting")) {
+        const msg = code === 0
+          ? "FCM listener process finished."
+          : `FCM listener process exited with code ${code}.`;
+        setState(userId, { status: "expired", message: msg });
       }
-    });
-
-    const current = listeners.get(userId);
-    listeners.set(userId, {
-      userId,
-      startedAt,
-      expiresAt,
-      status: "starting",
-      message: "Starting listener with provided FCM credentials...",
-      logs: current?.logs || [],
-      lastPairing: null,
-      stop: () => {
-        try { child.kill(); } catch {}
-        setState(userId, { status: "expired", message: "Pairing listener stopped." });
-      },
     });
 
   } catch (error) {
