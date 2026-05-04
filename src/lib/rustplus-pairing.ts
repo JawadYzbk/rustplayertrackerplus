@@ -242,8 +242,7 @@ async function findBattleMetricsId(ip: string, port: string | number): Promise<s
   try {
     const response = await axios.get("https://api.battlemetrics.com/servers", {
       params: {
-        "filter[address]": ip,
-        "filter[port]": port,
+        "filter[search]": `${ip}:${port}`,
         "filter[game]": "rust",
         "page[size]": 1,
       },
