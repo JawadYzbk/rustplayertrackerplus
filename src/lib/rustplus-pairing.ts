@@ -103,8 +103,9 @@ process.stdin.on('end', async () => {
       
       // Debug logging:
       try {
-        const strData = JSON.stringify(data);
-        send({ type: 'log', level: 'info', message: 'Raw data: ' + strData.substring(0, 300) });
+        const appData = data && (data.appData || data.app_data);
+        const map = appDataToMap(appData);
+        send({ type: 'log', level: 'info', message: 'FCM Map: ' + JSON.stringify(map) });
       } catch (e) {}
 
       const pairing = extractServerPairing(data);
@@ -121,8 +122,9 @@ process.stdin.on('end', async () => {
     client.on('ON_NOTIFICATION_RECEIVED', (data) => {
       send({ type: 'log', level: 'info', message: 'Encrypted push notification received.' });
       try {
-        const strData = JSON.stringify(data);
-        send({ type: 'log', level: 'info', message: 'Raw notification: ' + strData.substring(0, 300) });
+        const appData = data.object && (data.object.appData || data.object.app_data);
+        const map = appDataToMap(appData);
+        send({ type: 'log', level: 'info', message: 'Encrypted FCM Map: ' + JSON.stringify(map) });
       } catch (e) {}
       
       // Try extracting from data.notification or data.object
