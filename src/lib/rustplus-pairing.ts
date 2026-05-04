@@ -98,10 +98,10 @@ process.stdin.on('end', async () => {
 let _cachedScriptPath: string | null = null;
 
 function buildScriptContent(): string {
-  // Resolve absolute paths to all required modules from this process's node_modules.
-  // When the script runs from /tmp it has no node_modules, so we must hardcode the paths.
-  const clientPath = require.resolve("@liamcottle/push-receiver/src/client");
-  
+  // We CANNOT use require.resolve() here — Next.js/webpack replaces it with a numeric module ID.
+  // Instead, construct the absolute path manually from process.cwd() (the project root).
+  const clientPath = path.join(process.cwd(), "node_modules/@liamcottle/push-receiver/src/client.js");
+
   return FCM_LISTENER_SCRIPT
     .replace("require('@liamcottle/push-receiver/src/client')", `require(${JSON.stringify(clientPath)})`);
 }
