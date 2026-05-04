@@ -100,6 +100,13 @@ process.stdin.on('end', async () => {
 
     client.on('ON_DATA_RECEIVED', (data) => {
       send({ type: 'log', level: 'info', message: 'Push notification received.' });
+      
+      // Debug logging:
+      try {
+        const strData = JSON.stringify(data);
+        send({ type: 'log', level: 'info', message: 'Raw data: ' + strData.substring(0, 300) });
+      } catch (e) {}
+
       const pairing = extractServerPairing(data);
       if (pairing) {
         send({ type: 'pairing', pairing });
@@ -108,6 +115,25 @@ process.stdin.on('end', async () => {
         process.exit(0);
       } else {
         send({ type: 'log', level: 'warn', message: 'Notification received but no server pairing found.' });
+      }
+    });
+
+    client.on('ON_NOTIFICATION_RECEIVED', (data) => {
+      send({ type: 'log', level: 'info', message: 'Encrypted push notification received.' });
+      try {
+        const strData = JSON.stringify(data);
+        send({ type: 'log', level: 'info', message: 'Raw notification: ' + strData.substring(0, 300) });
+      } catch (e) {}
+      
+      // Try extracting from data.notification or data.object
+      const pairing = extractServerPairing(data.notification) || extractServerPairing(data.object) || extractServerPairing(data);
+      if (pairing) {
+        send({ type: 'pairing', pairing });
+        clearTimeout(timer);
+        try { client.destroy(); } catch {}
+        process.exit(0);
+      } else {
+        send({ type: 'log', level: 'warn', message: 'Encrypted notification received but no server pairing found.' });
       }
     });
 
