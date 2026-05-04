@@ -18,24 +18,51 @@ function send(obj) {
   process.stdout.write(JSON.stringify(obj) + '\\n');
 }
 
-function extractServerPairing(value) {
-  if (!value || typeof value !== 'object') return null;
-  const obj = value;
-  const isServerPair =
-    obj.type === 'server' &&
-    typeof obj.ip === 'string' &&
-    (typeof obj.port === 'string' || typeof obj.port === 'number') &&
-    typeof obj.playerId === 'string' &&
-    typeof obj.playerToken === 'string' &&
-    typeof obj.id === 'string';
-
-  if (isServerPair) return obj;
-
-  for (const nested of Object.values(obj)) {
-    const found = extractServerPairing(nested);
-    if (found) return found;
+// Rust+ FCM notifications arrive as a DataMessageStanza with an appData
+// array of { key, value } pairs. A *server* pairing notification has:
+//   { key: 'channelId', value: 'server' }
+//   { key: 'body',      value: '<JSON string with ip/port/playerId/playerToken/...>' }
+// We must look for that pattern rather than a nested JS object.
+function appDataToMap(appData) {
+  const map = {};
+  if (Array.isArray(appData)) {
+    for (const entry of appData) {
+      if (entry && typeof entry.key === 'string') map[entry.key] = entry.value;
+    }
   }
-  return null;
+  return map;
+}
+
+function extractServerPairing(data) {
+  // data is the raw DataMessageStanza object emitted by push-receiver
+  const appData = data && (data.appData || data.app_data);
+  if (!appData) return null;
+
+  const map = appDataToMap(appData);
+
+  // Must be a server pairing channel
+  if (map['channelId'] !== 'server') return null;
+
+  // The pairing details are JSON-encoded in the 'body' key
+  let body;
+  try {
+    body = JSON.parse(map['body'] || '{}');
+  } catch {
+    return null;
+  }
+
+  const { ip, port, playerId, playerToken } = body;
+  if (!ip || !port || !playerId || !playerToken) return null;
+
+  return {
+    type: 'server',
+    id: body.id || body.serverId || (ip + ':' + port),
+    name: body.name || body.serverName || undefined,
+    ip,
+    port,
+    playerId,
+    playerToken,
+  };
 }
 
 let rawInput = '';
@@ -201,28 +228,53 @@ async function findBattleMetricsId(ip: string, port: string | number): Promise<s
   return null;
 }
 
-function extractServerPairing(value: unknown): PairingServerPayload | null {
-  if (!value || typeof value !== "object") return null;
+/**
+ * Rust+ sends a DataMessageStanza whose `appData` field is an array of
+ * { key, value } pairs.  A **server** pairing notification is identified by:
+ *   channelId === "server"
+ * with the actual pairing details JSON-encoded in the "body" key.
+ */
+function appDataToMap(appData: Array<{ key: string; value: string }>): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const entry of appData) {
+    if (entry?.key) map[entry.key] = entry.value;
+  }
+  return map;
+}
 
-  const obj = value as Record<string, unknown>;
-  const isServerPair =
-    obj.type === "server" &&
-    typeof obj.ip === "string" &&
-    (typeof obj.port === "string" || typeof obj.port === "number") &&
-    typeof obj.playerId === "string" &&
-    typeof obj.playerToken === "string" &&
-    typeof obj.id === "string";
+function extractServerPairing(data: unknown): PairingServerPayload | null {
+  if (!data || typeof data !== "object") return null;
 
-  if (isServerPair) {
-    return obj as unknown as PairingServerPayload;
+  const obj = data as Record<string, unknown>;
+
+  // appData may be keyed as appData or app_data depending on protobuf decode settings
+  const rawAppData = (obj["appData"] ?? obj["app_data"]) as Array<{ key: string; value: string }> | undefined;
+  if (!Array.isArray(rawAppData)) return null;
+
+  const map = appDataToMap(rawAppData);
+
+  // Only handle server pairing notifications
+  if (map["channelId"] !== "server") return null;
+
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(map["body"] ?? "{}");
+  } catch {
+    return null;
   }
 
-  for (const nested of Object.values(obj)) {
-    const found = extractServerPairing(nested);
-    if (found) return found;
-  }
+  const { ip, port, playerId, playerToken } = body as Record<string, string>;
+  if (!ip || !port || !playerId || !playerToken) return null;
 
-  return null;
+  return {
+    type: "server",
+    id: (body["id"] ?? body["serverId"] ?? `${ip}:${port}`) as string,
+    name: (body["name"] ?? body["serverName"]) as string | undefined,
+    ip,
+    port,
+    playerId,
+    playerToken,
+  };
 }
 
 async function upsertServerFromPairing(userId: string, pairing: PairingServerPayload) {
