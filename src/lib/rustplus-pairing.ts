@@ -40,8 +40,8 @@ function extractServerPairing(data) {
 
   const map = appDataToMap(appData);
 
-  // Must be a server pairing channel
-  if (map['channelId'] !== 'server') return null;
+  // The pairing notification has channelId 'pairing' or 'server'
+  if (map['channelId'] !== 'pairing' && map['channelId'] !== 'server') return null;
 
   // The pairing details are JSON-encoded in the 'body' key
   let body;
@@ -50,6 +50,9 @@ function extractServerPairing(data) {
   } catch {
     return null;
   }
+
+  // Ensure it's actually a server pairing payload
+  if (body.type !== 'server') return null;
 
   const { ip, port, playerId, playerToken } = body;
   if (!ip || !port || !playerId || !playerToken) return null;
@@ -281,8 +284,8 @@ function extractServerPairing(data: unknown): PairingServerPayload | null {
 
   const map = appDataToMap(rawAppData);
 
-  // Only handle server pairing notifications
-  if (map["channelId"] !== "server") return null;
+  // The pairing notification has channelId 'pairing' or 'server'
+  if (map["channelId"] !== "pairing" && map["channelId"] !== "server") return null;
 
   let body: Record<string, unknown>;
   try {
@@ -290,6 +293,9 @@ function extractServerPairing(data: unknown): PairingServerPayload | null {
   } catch {
     return null;
   }
+
+  // Ensure it's actually a server pairing payload
+  if (body.type !== "server") return null;
 
   const { ip, port, playerId, playerToken } = body as Record<string, string>;
   if (!ip || !port || !playerId || !playerToken) return null;
