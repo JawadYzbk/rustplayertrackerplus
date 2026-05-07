@@ -98,6 +98,8 @@ export default function ServersPage() {
   const [credentialsCommand, setCredentialsCommand] = useState("");
   const [fcmCredentialsJson, setFcmCredentialsJson] = useState("");
   const [showGuide, setShowGuide] = useState(false);
+  const [showManualConfig, setShowManualConfig] = useState<boolean | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [fcmInfo, setFcmInfo] = useState<FcmInfo | null>(null);
 
   // Filter & sort state
@@ -228,13 +230,39 @@ export default function ServersPage() {
         );
         setPairingStatus(data.status);
         setFcmInfo(data.fcm);
+
+        // If credentials are valid, collapse manual config by default
+        if (showManualConfig === null && data.fcm?.hasSavedCredentials) {
+          const isExpired = data.fcm.expiresAt && new Date(data.fcm.expiresAt) < new Date();
+          setShowManualConfig(isExpired ? true : false);
+        }
       } catch {
         // ignore initial status load errors
       }
     };
 
     void loadPairingStatus();
-  }, []);
+  }, [showManualConfig]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    const isActive = pairingStatus?.status === "starting" || pairingStatus?.status === "listening";
+
+    if (isActive && pairingStatus?.expiresAt) {
+      const update = () => {
+        const remaining = Math.max(0, pairingStatus.expiresAt! - Date.now());
+        setTimeLeft(remaining);
+      };
+      update();
+      timer = setInterval(update, 1000);
+    } else {
+      setTimeLeft(null);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [pairingStatus?.status, pairingStatus?.expiresAt]);
 
   useEffect(() => {
     const token = window.sessionStorage.getItem("rustplus_auth_token");
@@ -564,45 +592,58 @@ export default function ServersPage() {
 
           <div className="space-y-4">
             <div className="grid gap-2">
-              <label className="text-sm font-medium">Manual Credentials Configuration</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Paste Credentials JSON</p>
-                  <textarea
-                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder='{ "gcm": { "androidId": "...", "securityToken": "..." } }'
-                    value={fcmCredentialsJson}
-                    onChange={(e) => setFcmCredentialsJson(e.target.value)}
-                  />
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    size="sm"
-                    disabled={startingPairing || !fcmCredentialsJson.trim()}
-                    onClick={() => void startPairingListenerWithJson(fcmCredentialsJson.trim())}
-                  >
-                    Start with JSON
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Or Paste Command String</p>
-                  <textarea
-                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="/credentials add gcm_android_id:... gcm_security_token:..."
-                    value={credentialsCommand}
-                    onChange={(e) => setCredentialsCommand(e.target.value)}
-                  />
-                  <Button 
-                    className="w-full"
-                    variant="outline"
-                    size="sm"
-                    disabled={startingPairing || !credentialsCommand.trim()}
-                    onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
-                  >
-                    Start with Command
-                  </Button>
-                </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Manual Credentials Configuration</label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 text-[10px] uppercase tracking-wider font-bold"
+                  onClick={() => setShowManualConfig(!showManualConfig)}
+                >
+                  {showManualConfig ? "Collapse" : "Expand Configuration"}
+                </Button>
               </div>
+              
+              {showManualConfig && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Paste Credentials JSON</p>
+                    <textarea
+                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder='{ "gcm": { "androidId": "...", "securityToken": "..." } }'
+                      value={fcmCredentialsJson}
+                      onChange={(e) => setFcmCredentialsJson(e.target.value)}
+                    />
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                      size="sm"
+                      disabled={startingPairing || !fcmCredentialsJson.trim()}
+                      onClick={() => void startPairingListenerWithJson(fcmCredentialsJson.trim())}
+                    >
+                      Start with JSON
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Or Paste Command String</p>
+                    <textarea
+                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="/credentials add gcm_android_id:... gcm_security_token:..."
+                      value={credentialsCommand}
+                      onChange={(e) => setCredentialsCommand(e.target.value)}
+                    />
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                      size="sm"
+                      disabled={startingPairing || !credentialsCommand.trim()}
+                      onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
+                    >
+                      Start with Command
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4 py-2">
@@ -611,15 +652,32 @@ export default function ServersPage() {
               <div className="h-px bg-border flex-1" />
             </div>
 
+            {timeLeft !== null && (
+              <div className="flex justify-center animate-in fade-in zoom-in-95 duration-300">
+                <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-inner shadow-primary/5">
+                  <div className="relative">
+                    <Clock className="w-5 h-5" />
+                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/20"></span>
+                  </div>
+                  <div className="flex flex-col items-center leading-none">
+                    <span className="font-mono font-black text-2xl tracking-tighter">
+                      {Math.floor(timeLeft / 60000)}:{(Math.floor(timeLeft / 1000) % 60).toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[9px] uppercase tracking-widest font-bold opacity-70">Remaining</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col md:flex-row gap-3">
               {fcmInfo?.hasSavedCredentials ? (
                 <Button 
-                  className="flex-1 h-12 text-base font-bold shadow-lg shadow-primary/20"
+                  className="flex-1 h-12 text-base font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
                   onClick={() => void startPairingWithSavedCredentials()}
-                  disabled={startingPairing}
+                  disabled={startingPairing || timeLeft !== null}
                 >
                   {startingPairing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  <Wifi className="mr-2 h-5 w-5" /> Start Pairing Listener
+                  <Wifi className="mr-2 h-5 w-5" /> {timeLeft !== null ? "Pairing Listener Active" : "Start Pairing Listener"}
                 </Button>
               ) : (
                 <div className="flex-1 p-4 rounded-lg border border-dashed text-center text-sm text-muted-foreground bg-muted/30">
@@ -628,7 +686,7 @@ export default function ServersPage() {
               )}
               
               {pairingStatus && (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
-                <Button variant="destructive" className="h-12 px-8" onClick={handleStopPairing}>
+                <Button variant="destructive" className="h-12 px-8 shadow-lg shadow-destructive/20" onClick={handleStopPairing}>
                   <WifiOff className="mr-2 h-5 w-5" /> Stop Listener
                 </Button>
               )}
