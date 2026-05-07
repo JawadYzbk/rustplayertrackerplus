@@ -565,7 +565,7 @@ export default function ServersPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            {pairingStatus ? pairingStatus.message : "No active pairing listener. FCM credentials required."}
+            {pairingStatus ? pairingStatus.message : !fcmInfo?.hasSavedCredentials ? "No active pairing listener. FCM credentials required." : ""}
           </div>
           
           {/* Automatic Login Flow - Temporarily Disabled as requested */}
