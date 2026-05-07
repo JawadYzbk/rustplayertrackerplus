@@ -30,15 +30,19 @@ export function PairingGuide() {
             <div className="space-y-3">
               <div className="flex gap-3">
                 <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">1</div>
-                <p className="text-xs">Visit the <a href="https://rustplusplus-credentials.netlify.app/" target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">Credentials Page <ExternalLink className="w-2 h-2" /></a> using <b>Chrome or Firefox</b>.</p>
+                <p className="text-xs">
+                  Install the extension for your browser: 
+                  <a href="https://chromewebstore.google.com/detail/rustplusplus-credential-a/ooahmkklkanfgfmphpknpcgdpdcoikhe" target="_blank" rel="noreferrer" className="text-primary hover:underline mx-1">Chrome</a> or 
+                  <a href="https://addons.mozilla.org/en-US/firefox/addon/rustplusplus-credential-app" target="_blank" rel="noreferrer" className="text-primary hover:underline mx-1">Firefox</a>.
+                </p>
               </div>
               <div className="flex gap-3">
                 <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">2</div>
-                <p className="text-xs">Install the required browser extension (links on the page) and refresh.</p>
+                <p className="text-xs">Navigate to the <a href="https://rustplusplus-credentials.netlify.app/" target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">Credentials Display Page <ExternalLink className="w-2 h-2" /></a>.</p>
               </div>
               <div className="flex gap-3">
                 <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">3</div>
-                <p className="text-xs">Login with your <b>Steam Account</b> when prompted.</p>
+                <p className="text-xs">Login with your <b>Steam Account</b> on that page.</p>
               </div>
               <div className="flex gap-3">
                 <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">4</div>
