@@ -38,14 +38,10 @@ export function PairingGuide() {
               </div>
               <div className="flex gap-3">
                 <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">2</div>
-                <p className="text-xs">Navigate to the <a href="https://rustplusplus-credentials.netlify.app/" target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">Credentials Display Page <ExternalLink className="w-2 h-2" /></a>.</p>
+                <p className="text-xs">Login with your <b>Steam Account</b> when prompted by the extension.</p>
               </div>
               <div className="flex gap-3">
                 <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">3</div>
-                <p className="text-xs">Login with your <b>Steam Account</b> on that page.</p>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-none w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">4</div>
                 <p className="text-xs">Copy the resulting <code>/credentials add ...</code> command or the raw JSON and paste it in the inputs above.</p>
               </div>
             </div>
