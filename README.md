@@ -34,6 +34,13 @@ The app includes a dashboard, server management tools, live player lookup, sessi
   - peak and dead hours
   - average session length
   - recency-weighted online probability forecast
+- **Rust+ Companion Integration**:
+  - Automated server pairing via FCM (Firebase Cloud Messaging)
+  - Persistent credential management (via Desktop/Web tools)
+  - Real-time pairing console with live logs and countdown timer
+- **Smart In-Game Alerts**:
+  - Receive automated Rust+ notifications when tracked players join or leave
+  - Per-player toggle for alerts directly in the Player Directory
 - Run a background polling worker for continuous updates
 
 ## Tech Stack
@@ -61,11 +68,19 @@ The app includes a dashboard, server management tools, live player lookup, sessi
 - Inspect live players currently online
 - Track live players directly from the modal
 
+### Rust+ Pairing
+
+- Manual FCM credential configuration (JSON or Command String)
+- Integrated Setup Guide for obtaining persistent credentials
+- Live pairing listener (2-minute window) to capture server pairing notifications
+- Direct integration with BattleMetrics to resolve companion ports to server IDs
+
 ### Players
 
 - Search and browse tracked players
 - See online/offline status based on recent activity
 - Open an individual player intelligence page
+- **In-Game Alert System**: Toggle real-time Rust+ notifications for specific high-priority players, ensuring you never miss a threat or opportunity.
 
 ### Player Analytics
 
@@ -119,6 +134,7 @@ Session log
 5. When tracked players come online or go offline, sessions are opened and closed in the database.
 6. Daily and hourly aggregates are updated when sessions end.
 7. Analytics are computed from pre-aggregated data for fast player insights.
+8. Rust+ pairing captures server credentials via a temporary FCM listener, allowing for future automated interactions.
 
 ## Project Structure
 
