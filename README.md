@@ -106,13 +106,15 @@ Dashboard
 
 
 - Servers List (per User)
-<img width="1300" height="700" alt="image" src="https://github.com/user-attachments/assets/0e626d5e-1a25-4d65-9414-5c73cf9e609d" />
+<img width="984" height="967" alt="image" src="https://github.com/user-attachments/assets/2bb1dd57-5793-4664-983a-009c1258b103" />
+
 Online Players list per server (searchable+ sortable)
 <img width="695" height="1130" alt="image" src="https://github.com/user-attachments/assets/f2cab2cf-5c74-4a11-b632-96edb1b62022" />
 
 
 Tracked Players List 
-<img width="1915" height="975" alt="image" src="https://github.com/user-attachments/assets/ab7c9954-baf9-421c-a69a-e06c18770ea5" />
+<img width="1921" height="972" alt="image" src="https://github.com/user-attachments/assets/9137ea0b-140f-41ff-9d2e-381cb358cc5d" />
+
 
 ### Player Page:
 player insights page
