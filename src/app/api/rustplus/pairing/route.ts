@@ -23,7 +23,28 @@ const StartPairingSchema = z.object({
   issuedDate: z.coerce.number().int().optional(),
   expireDate: z.coerce.number().int().optional(),
   listenMs: z.number().int().min(15_000).max(300_000).optional(),
+  fcmCredentials: z.any().optional(),
 });
+
+function parseFcmCredentials(input: any) {
+  if (!input || typeof input !== "object") return null;
+
+  // Handle rustplusplus bot format or raw fcm_credentials.json
+  const gcm = input.gcm || input;
+  const androidId = gcm.androidId || gcm.gcm_android_id || input.gcm_android_id;
+  const securityToken = gcm.securityToken || gcm.gcm_security_token || input.gcm_security_token;
+  const steamId = input.steam_id || input.steamId;
+  const issuedDate = input.issued_date || input.issuedDate;
+  const expireDate = input.expire_date || input.expireDate;
+
+  return {
+    gcmAndroidId: androidId ? String(androidId) : undefined,
+    gcmSecurityToken: securityToken ? String(securityToken) : undefined,
+    steamId: steamId ? String(steamId) : undefined,
+    issuedDate: issuedDate ? Number(issuedDate) : undefined,
+    expireDate: expireDate ? Number(expireDate) : undefined,
+  };
+}
 
 function parseCredentialsCommand(command: string) {
   const pairs = [...command.matchAll(/([a-z_]+):([^\s]+)/g)];
@@ -58,13 +79,14 @@ export async function GET() {
   const status = getPairingListenerStatus(userId);
   const user = await prisma.appUser.findUnique({
     where: { id: userId },
-    select: { fcmSteamId: true, fcmExpiresAt: true },
+    select: { fcmAndroidId: true, fcmSteamId: true, fcmExpiresAt: true },
   });
 
   return Response.json({
     status,
     fcm: user
       ? {
+          hasSavedCredentials: !!user.fcmAndroidId,
           steamId: user.fcmSteamId,
           expiresAt: user.fcmExpiresAt?.toISOString(),
         }
@@ -94,6 +116,7 @@ export async function POST(req: NextRequest) {
     issuedDate,
     expireDate,
     listenMs,
+    fcmCredentials,
   } = parsed.data;
 
   try {
@@ -104,9 +127,13 @@ export async function POST(req: NextRequest) {
       const parsedCommand = credentialsCommand
         ? parseCredentialsCommand(credentialsCommand)
         : null;
+      
+      const parsedJson = fcmCredentials
+        ? parseFcmCredentials(fcmCredentials)
+        : null;
 
-      let resolvedAndroidId = gcmAndroidId || parsedCommand?.gcmAndroidId;
-      let resolvedSecurityToken = gcmSecurityToken || parsedCommand?.gcmSecurityToken;
+      let resolvedAndroidId = gcmAndroidId || parsedCommand?.gcmAndroidId || parsedJson?.gcmAndroidId;
+      let resolvedSecurityToken = gcmSecurityToken || parsedCommand?.gcmSecurityToken || parsedJson?.gcmSecurityToken;
 
       // If still no credentials, check DB
       if (!resolvedAndroidId || !resolvedSecurityToken) {
@@ -135,9 +162,9 @@ export async function POST(req: NextRequest) {
         {
           gcmAndroidId: resolvedAndroidId,
           gcmSecurityToken: resolvedSecurityToken,
-          steamId: steamId || parsedCommand?.steamId,
-          issuedDate: issuedDate || parsedCommand?.issuedDate,
-          expireDate: expireDate || parsedCommand?.expireDate,
+          steamId: steamId || parsedCommand?.steamId || parsedJson?.steamId,
+          issuedDate: issuedDate || parsedCommand?.issuedDate || parsedJson?.issuedDate,
+          expireDate: expireDate || parsedCommand?.expireDate || parsedJson?.expireDate,
         },
         listenMs
       );

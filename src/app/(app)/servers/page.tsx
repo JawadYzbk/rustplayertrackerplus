@@ -20,7 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, Server as ServerIcon, Plus, Loader2, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search, Terminal, Wifi, WifiOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { Trash2, Server as ServerIcon, Plus, Loader2, Clock, ArrowUpDown, ArrowUp, ArrowDown, Search, Terminal, Wifi, WifiOff, CheckCircle2, AlertCircle, HelpCircle } from "lucide-react";
+import { PairingGuide } from "@/components/rustplus/pairing-guide";
 
 interface Server {
   id: string;
@@ -48,6 +49,7 @@ interface PairingStatus {
 }
 
 interface FcmInfo {
+  hasSavedCredentials?: boolean;
   steamId: string | null;
   expiresAt: string | null;
 }
@@ -94,6 +96,8 @@ export default function ServersPage() {
   const [startingPairing, setStartingPairing] = useState(false);
   const [manualAuthToken, setManualAuthToken] = useState("");
   const [credentialsCommand, setCredentialsCommand] = useState("");
+  const [fcmCredentialsJson, setFcmCredentialsJson] = useState("");
+  const [showGuide, setShowGuide] = useState(false);
   const [fcmInfo, setFcmInfo] = useState<FcmInfo | null>(null);
 
   // Filter & sort state
@@ -152,6 +156,34 @@ export default function ServersPage() {
         axios.isAxiosError(error)
           ? error.response?.data?.error || "Failed to start FCM listener"
           : "Failed to start FCM listener"
+      );
+    } finally {
+      setStartingPairing(false);
+    }
+  }
+
+  async function startPairingListenerWithJson(jsonStr: string) {
+    setStartingPairing(true);
+    try {
+      let fcmCredentials;
+      try {
+        fcmCredentials = JSON.parse(jsonStr);
+      } catch {
+        throw new Error("Invalid JSON format. Please paste the exact JSON from the guide.");
+      }
+
+      const { data } = await axios.post<{ status: PairingStatus | null }>(
+        "/api/rustplus/pairing",
+        {
+          fcmCredentials,
+          listenMs: 120000,
+        }
+      );
+      setPairingStatus(data.status);
+      toast.success("FCM listener started using provided JSON credentials.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to start FCM listener"
       );
     } finally {
       setStartingPairing(false);
@@ -465,10 +497,26 @@ export default function ServersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Rust+ Client Pairing</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Rust+ Client Pairing</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs text-primary gap-1.5"
+              onClick={() => setShowGuide(!showGuide)}
+            >
+              <HelpCircle className="w-3.5 h-3.5" /> 
+              {showGuide ? "Hide Setup Guide" : "How to get credentials?"}
+            </Button>
+          </div>
           <CardDescription>
-            Login in same tab, return here, then start a 2-minute pairing listener.
+            Use manual credentials from the guides to enable server pairing notifications.
           </CardDescription>
+          {showGuide && (
+            <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <PairingGuide />
+            </div>
+          )}
           {fcmInfo?.expiresAt && (
             <div className={`mt-2 text-xs flex items-center gap-2 p-2 rounded border ${
               new Date(fcmInfo.expiresAt) < new Date() 
@@ -489,52 +537,102 @@ export default function ServersPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-xs text-muted-foreground">
-            {pairingStatus ? pairingStatus.message : "No active pairing listener. Token required."}
+            {pairingStatus ? pairingStatus.message : "No active pairing listener. FCM credentials required."}
           </div>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <Button onClick={handleConnectRustPlus}>
-              Login Rust+ (Same Tab)
-            </Button>
-            <Input
-              value={manualAuthToken}
-              onChange={(e) => setManualAuthToken(e.target.value)}
-              placeholder="Paste Rust+ Auth Token (if callback did not auto-capture)"
-              className="md:max-w-md"
-            />
-            <Button
-              onClick={() => void startPairingListener(manualAuthToken.trim())}
-              disabled={startingPairing || manualAuthToken.trim().length === 0}
-            >
-              {startingPairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Start Listener
-            </Button>
-            {pairingStatus &&
-              (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
-                <Button variant="outline" onClick={handleStopPairing}>
-                  Stop Listener
+          
+          {/* Automatic Login Flow - Temporarily Disabled as requested */}
+          {false && (
+            <div className="flex flex-col gap-2 md:flex-row">
+              <Button onClick={handleConnectRustPlus}>
+                Login Rust+ (Same Tab)
+              </Button>
+              <Input
+                value={manualAuthToken}
+                onChange={(e) => setManualAuthToken(e.target.value)}
+                placeholder="Paste Rust+ Auth Token"
+                className="md:max-w-md"
+              />
+              <Button
+                onClick={() => void startPairingListener(manualAuthToken.trim())}
+                disabled={startingPairing || manualAuthToken.trim().length === 0}
+              >
+                {startingPairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Start Listener
+              </Button>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Manual Credentials Configuration</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Paste Credentials JSON</p>
+                  <textarea
+                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder='{ "gcm": { "androidId": "...", "securityToken": "..." } }'
+                    value={fcmCredentialsJson}
+                    onChange={(e) => setFcmCredentialsJson(e.target.value)}
+                  />
+                  <Button 
+                    className="w-full"
+                    variant="outline"
+                    size="sm"
+                    disabled={startingPairing || !fcmCredentialsJson.trim()}
+                    onClick={() => void startPairingListenerWithJson(fcmCredentialsJson.trim())}
+                  >
+                    Start with JSON
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Or Paste Command String</p>
+                  <textarea
+                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="/credentials add gcm_android_id:... gcm_security_token:..."
+                    value={credentialsCommand}
+                    onChange={(e) => setCredentialsCommand(e.target.value)}
+                  />
+                  <Button 
+                    className="w-full"
+                    variant="outline"
+                    size="sm"
+                    disabled={startingPairing || !credentialsCommand.trim()}
+                    onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
+                  >
+                    Start with Command
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 py-2">
+              <div className="h-px bg-border flex-1" />
+              <span className="text-[10px] text-muted-foreground uppercase font-bold">Actions</span>
+              <div className="h-px bg-border flex-1" />
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-3">
+              {fcmInfo?.hasSavedCredentials ? (
+                <Button 
+                  className="flex-1 h-12 text-base font-bold shadow-lg shadow-primary/20"
+                  onClick={() => void startPairingWithSavedCredentials()}
+                  disabled={startingPairing}
+                >
+                  {startingPairing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  <Wifi className="mr-2 h-5 w-5" /> Start Pairing Listener
+                </Button>
+              ) : (
+                <div className="flex-1 p-4 rounded-lg border border-dashed text-center text-sm text-muted-foreground bg-muted/30">
+                  No credentials saved. Paste JSON or Command above to start.
+                </div>
+              )}
+              
+              {pairingStatus && (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
+                <Button variant="destructive" className="h-12 px-8" onClick={handleStopPairing}>
+                  <WifiOff className="mr-2 h-5 w-5" /> Stop Listener
                 </Button>
               )}
-          </div>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <Input
-              value={credentialsCommand}
-              onChange={(e) => setCredentialsCommand(e.target.value)}
-              placeholder="/credentials add gcm_android_id:... gcm_security_token:... steam_id:..."
-              className="md:max-w-3xl"
-            />
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (credentialsCommand.trim()) {
-                  void startPairingListenerWithCredentials(credentialsCommand.trim());
-                } else {
-                  void startPairingWithSavedCredentials();
-                }
-              }}
-              disabled={startingPairing}
-            >
-              {credentialsCommand.trim() ? "Use FCM Credentials" : "Use Saved FCM Credentials"}
-            </Button>
+            </div>
           </div>
 
           {pairingStatus && (
