@@ -32,6 +32,8 @@ import {
   Trash2,
   Settings,
   Plus,
+  Pencil,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,6 +43,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type PlayerSortKey = "name" | "server" | "lastSeen" | "firstSeen" | "status";
 type SortDir = "asc" | "desc";
@@ -131,6 +140,12 @@ export default function PlayersPage() {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
 
+  // Editing Group State
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [updatingGroup, setUpdatingGroup] = useState(false);
+
   useEffect(() => {
     axios.get("/api/servers").then((res) => setServers(res.data));
   }, []);
@@ -139,6 +154,11 @@ export default function PlayersPage() {
     try {
       const { data } = await axios.get("/api/groups");
       setGroups(data);
+      // Update editingGroup if it's currently open to reflect latest counts/data
+      setEditingGroup(prev => {
+        if (!prev) return null;
+        return data.find((g: Group) => g.id === prev.id) || null;
+      });
       // Automatically expand all groups initially if not set
       setExpandedGroups(prev => {
         const next = { ...prev };
@@ -278,6 +298,25 @@ export default function PlayersPage() {
     }
   };
 
+  const handleUpdateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroup || !editName.trim()) return;
+    setUpdatingGroup(true);
+    try {
+      await axios.patch(`/api/groups/${editingGroup.id}`, { 
+        name: editName.trim(), 
+        color: editColor 
+      });
+      toast.success("Group updated");
+      fetchGroups();
+      setEditingGroup(null);
+    } catch {
+      toast.error("Failed to update group");
+    } finally {
+      setUpdatingGroup(false);
+    }
+  };
+
   const handleDeleteGroup = async (groupId: string) => {
     if (!confirm("Delete this group? Players in this group will become ungrouped.")) return;
     setDeletingGroupId(groupId);
@@ -361,18 +400,22 @@ export default function PlayersPage() {
           <p className="text-muted-foreground mt-0.5">{new Date(player.lastSeen).toLocaleString()}</p>
         </div>
         <div className="col-span-2">
-          <p className="text-muted-foreground text-[10px] uppercase font-semibold">Group</p>
-          <select
-            className="h-8 w-full mt-0.5 rounded-md border border-input bg-transparent px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-            value={player.groupId || ""}
-            onChange={(e) => handleAssignGroup(player.id, e.target.value || null)}
+          <p className="text-muted-foreground text-[10px] uppercase font-semibold mb-1">Group</p>
+          <Select
+            value={player.groupId || "ungrouped"}
+            onValueChange={(value) => handleAssignGroup(player.id, value === "ungrouped" ? null : value)}
             disabled={assigningGroupId === player.id}
           >
-            <option value="">Ungrouped</option>
-            {groups.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
+            <SelectTrigger className="w-full h-8 text-xs">
+              <SelectValue placeholder="Ungrouped" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ungrouped">Ungrouped</SelectItem>
+              {groups.map(g => (
+                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       
@@ -416,17 +459,21 @@ export default function PlayersPage() {
         {new Date(player.firstSeen).toLocaleDateString()}
       </TableCell>
       <TableCell>
-        <select
-          className="h-8 w-32 rounded-md border border-input bg-transparent px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
-          value={player.groupId || ""}
-          onChange={(e) => handleAssignGroup(player.id, e.target.value || null)}
+        <Select
+          value={player.groupId || "ungrouped"}
+          onValueChange={(value) => handleAssignGroup(player.id, value === "ungrouped" ? null : value)}
           disabled={assigningGroupId === player.id}
         >
-          <option value="">Ungrouped</option>
-          {groups.map(g => (
-            <option key={g.id} value={g.id}>{g.name}</option>
-          ))}
-        </select>
+          <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectValue placeholder="Ungrouped" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ungrouped">Ungrouped</SelectItem>
+            {groups.map(g => (
+              <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
@@ -462,54 +509,126 @@ export default function PlayersPage() {
           <p className="text-muted-foreground">View and search tracked players across all servers.</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={manageGroupsOpen} onOpenChange={setManageGroupsOpen}>
+          <Dialog open={manageGroupsOpen} onOpenChange={(open) => {
+            setManageGroupsOpen(open);
+            if (!open) setEditingGroup(null);
+          }}>
             <DialogTrigger render={<Button variant="outline" className="gap-2" />}>
               <Settings className="h-4 w-4" /> Manage Groups
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Manage Player Groups</DialogTitle>
+                <DialogTitle>{editingGroup ? `Edit Group: ${editingGroup.name}` : "Manage Player Groups"}</DialogTitle>
               </DialogHeader>
-              <div className="space-y-6">
-                <form onSubmit={handleCreateGroup} className="flex gap-3 items-end">
-                  <div className="space-y-2 flex-1">
-                    <label className="text-sm font-medium">New Group Name</label>
-                    <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="e.g. Clan Enemies" required />
-                  </div>
-                  <div className="space-y-2 w-20">
-                    <label className="text-sm font-medium">Color</label>
-                    <Input type="color" className="p-1 h-10 w-full" value={newGroupColor} onChange={e => setNewGroupColor(e.target.value)} />
-                  </div>
-                  <Button type="submit" disabled={creatingGroup}>
-                    {creatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  </Button>
-                </form>
 
-                <div className="border rounded-md divide-y max-h-64 overflow-y-auto">
-                  {groups.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">No groups created yet.</div>
-                  ) : (
-                    groups.map(group => (
-                      <div key={group.id} className="flex items-center justify-between p-3 bg-card">
-                        <div className="flex items-center gap-3">
-                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
-                          <span className="font-medium text-sm">{group.name}</span>
-                          <Badge variant="secondary" className="text-xs">{group._count?.players || 0} players</Badge>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                          onClick={() => handleDeleteGroup(group.id)}
-                          disabled={deletingGroupId === group.id}
-                        >
-                          {deletingGroupId === group.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </Button>
+              {editingGroup ? (
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-200">
+                  <form onSubmit={handleUpdateGroup} className="space-y-4">
+                    <div className="flex gap-3 items-end">
+                      <div className="space-y-2 flex-1">
+                        <label className="text-sm font-medium">Group Name</label>
+                        <Input value={editName} onChange={e => setEditName(e.target.value)} required />
                       </div>
-                    ))
-                  )}
+                      <div className="space-y-2 w-20">
+                        <label className="text-sm font-medium">Color</label>
+                        <Input type="color" className="p-1 h-10 w-full cursor-pointer" value={editColor} onChange={e => setEditColor(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" className="flex-1" disabled={updatingGroup}>
+                        {updatingGroup ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Save Changes
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setEditingGroup(null)}>Cancel</Button>
+                    </div>
+                  </form>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                        Group Members
+                        <Badge variant="secondary" className="text-[10px]">{groupedPlayers.get(editingGroup.id)?.length || 0}</Badge>
+                      </h4>
+                    </div>
+                    <div className="border rounded-lg divide-y max-h-48 overflow-y-auto bg-muted/20">
+                      {groupedPlayers.get(editingGroup.id)?.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground">No members in this group.</div>
+                      ) : (
+                        groupedPlayers.get(editingGroup.id)?.map(player => (
+                          <div key={player.id} className="flex items-center justify-between p-2 pl-3">
+                            <span className="text-sm font-medium truncate mr-2">{player.name}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 text-[10px] text-destructive hover:bg-destructive/10 px-2"
+                              onClick={() => handleAssignGroup(player.id, null)}
+                              disabled={assigningGroupId === player.id}
+                            >
+                              {assigningGroupId === player.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                              Remove
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-200">
+                  <form onSubmit={handleCreateGroup} className="flex gap-3 items-end">
+                    <div className="space-y-2 flex-1">
+                      <label className="text-sm font-medium">New Group Name</label>
+                      <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="e.g. Clan Enemies" required />
+                    </div>
+                    <div className="space-y-2 w-20">
+                      <label className="text-sm font-medium">Color</label>
+                      <Input type="color" className="p-1 h-10 w-full cursor-pointer" value={newGroupColor} onChange={e => setNewGroupColor(e.target.value)} />
+                    </div>
+                    <Button type="submit" disabled={creatingGroup}>
+                      {creatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    </Button>
+                  </form>
+
+                  <div className="border rounded-md divide-y max-h-64 overflow-y-auto">
+                    {groups.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">No groups created yet.</div>
+                    ) : (
+                      groups.map(group => (
+                        <div key={group.id} className="flex items-center justify-between p-3 bg-card hover:bg-muted/10 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
+                            <span className="font-medium text-sm">{group.name}</span>
+                            <Badge variant="secondary" className="text-[10px]">{group._count?.players || 0}</Badge>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                setEditingGroup(group);
+                                setEditName(group.name);
+                                setEditColor(group.color || "#3b82f6");
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                              onClick={() => handleDeleteGroup(group.id)}
+                              disabled={deletingGroupId === group.id}
+                            >
+                              {deletingGroupId === group.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
 
@@ -532,14 +651,19 @@ export default function PlayersPage() {
               </div>
               <div className="space-y-2 flex-1">
                 <label className="text-sm font-medium">Target Server</label>
-                <select 
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                <Select
                   value={newPlayerServer}
-                  onChange={e => setNewPlayerServer(e.target.value)}
+                  onValueChange={(v) => v && setNewPlayerServer(v)}
                 >
-                  <option value="">Select a server...</option>
-                  {servers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                  <SelectTrigger className="w-full h-10">
+                    <SelectValue placeholder="Select a server..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servers.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button type="submit" disabled={adding || !newPlayerId || !newPlayerServer}>
                 {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
