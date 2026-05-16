@@ -79,6 +79,7 @@ The app includes a dashboard, server management tools, live player lookup, sessi
 
 - Search and browse tracked players
 - See online/offline status based on recent activity
+- **Player Groups**: Organize tracked players into custom, color-coded groups. Display players in modern, collapsible grouped sections for easy monitoring.
 - Open an individual player intelligence page
 - **In-Game Alert System**: Toggle real-time Rust+ notifications for specific high-priority players, ensuring you never miss a threat or opportunity.
 
