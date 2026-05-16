@@ -276,7 +276,7 @@ export default function PlayerAnalyticsPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="mt-4 flex h-32 items-end gap-1">
+                <div className="mt-4 flex h-32 items-end gap-[1px] sm:gap-1">
                   {Array.from({ length: 24 }).map((_, hour) => {
                     const hourData = analytics.hourly.find((item) => item.hour === hour);
                     const totalTimeSec = hourData ? hourData.totalTimeSec : 0;

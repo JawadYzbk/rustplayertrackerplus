@@ -769,66 +769,113 @@ export default function ServersPage() {
               <p>No servers tracked yet.</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>BattleMetrics ID</TableHead>
-                    <TableHead>Tracked Players</TableHead>
-                    <TableHead>Sessions</TableHead>
-                    <TableHead>Rust+</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {servers.map((server) => (
-                    <TableRow key={server.id}>
-                      <TableCell className="font-medium">{server.name}</TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">{server.id}</TableCell>
-                      <TableCell>{server._count.players.toLocaleString()}</TableCell>
-                      <TableCell>{server._count.sessions.toLocaleString()}</TableCell>
-                      <TableCell>
-                        {server.rustPlusIp &&
-                        server.rustPlusPort &&
-                        server.rustPlusPlayerId &&
-                        server.rustPlusPlayerToken ? (
+            <>
+              {/* Desktop View */}
+              <div className="rounded-md border hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>BattleMetrics ID</TableHead>
+                      <TableHead>Tracked Players</TableHead>
+                      <TableHead>Sessions</TableHead>
+                      <TableHead>Rust+</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {servers.map((server) => (
+                      <TableRow key={server.id}>
+                        <TableCell className="font-medium">{server.name}</TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">{server.id}</TableCell>
+                        <TableCell>{server._count.players.toLocaleString()}</TableCell>
+                        <TableCell>{server._count.sessions.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {server.rustPlusIp &&
+                          server.rustPlusPort &&
+                          server.rustPlusPlayerId &&
+                          server.rustPlusPlayerToken ? (
+                            <span className="text-xs font-medium text-green-500">Configured</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not set</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mr-2"
+                            onClick={() => openRustPlusConfig(server)}
+                          >
+                            Rust+
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewLive(server)}
+                            className="mr-2"
+                          >
+                            Live Players
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(server.id)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="grid gap-4 md:hidden">
+                {servers.map((server) => (
+                  <div key={server.id} className="rounded-lg border bg-card p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{server.name}</h4>
+                        <p className="font-mono text-xs text-muted-foreground">{server.id}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(server.id)}
+                        className="text-destructive hover:bg-destructive/10 -mt-2 -mr-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Players</p>
+                        <p>{server._count.players.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Sessions</p>
+                        <p>{server._count.sessions.toLocaleString()}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Rust+</p>
+                        {server.rustPlusIp && server.rustPlusPort && server.rustPlusPlayerId && server.rustPlusPlayerToken ? (
                           <span className="text-xs font-medium text-green-500">Configured</span>
                         ) : (
                           <span className="text-xs text-muted-foreground">Not set</span>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          onClick={() => openRustPlusConfig(server)}
-                        >
-                          Rust+
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewLive(server)}
-                          className="mr-2"
-                        >
-                          Live Players
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(server.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2 border-t">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openRustPlusConfig(server)}>Rust+</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewLive(server)}>Live Players</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

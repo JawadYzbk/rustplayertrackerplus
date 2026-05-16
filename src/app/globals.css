@@ -134,6 +134,17 @@
   padding: 28px 32px;
 }
 
+@media (max-width: 768px) {
+  .app-sidebar {
+    display: none;
+  }
+  .app-main {
+    margin-left: 0;
+    padding: 16px;
+    padding-bottom: 80px; /* Space for BottomNav */
+  }
+}
+
 /* ─── Online pulse badge ──────────────────────────────────────────────────────── */
 .pulse-dot {
   display: inline-block;

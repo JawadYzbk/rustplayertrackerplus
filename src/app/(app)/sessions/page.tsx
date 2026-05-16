@@ -99,55 +99,99 @@ export default function SessionsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border relative">
+          <div className="relative">
             {loading && (
-              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center">
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-md">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             )}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Server</TableHead>
-                  <TableHead>Joined At</TableHead>
-                  <TableHead>Left At</TableHead>
-                  <TableHead>Duration</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sessions.length === 0 && !loading ? (
+            
+            {/* Desktop View */}
+            <div className="rounded-md border hidden md:block">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                      No sessions found.
-                    </TableCell>
+                    <TableHead>Player</TableHead>
+                    <TableHead>Server</TableHead>
+                    <TableHead>Joined At</TableHead>
+                    <TableHead>Left At</TableHead>
+                    <TableHead>Duration</TableHead>
                   </TableRow>
-                ) : (
-                  sessions.map((session) => (
-                    <TableRow key={session.id}>
-                      <TableCell className="font-medium">
-                        {session.player.name}
-                        <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{session.playerId}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-xs">{session.server.name}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(session.joinedAt).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {session.leftAt ? new Date(session.leftAt).toLocaleString() : (
-                          <span className="text-green-500 font-medium">Online Now</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {formatDuration(session.durationSec)}
+                </TableHeader>
+                <TableBody>
+                  {sessions.length === 0 && !loading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                        No sessions found.
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    sessions.map((session) => (
+                      <TableRow key={session.id}>
+                        <TableCell className="font-medium">
+                          {session.player.name}
+                          <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{session.playerId}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{session.server.name}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(session.joinedAt).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {session.leftAt ? new Date(session.leftAt).toLocaleString() : (
+                            <span className="text-green-500 font-medium">Online Now</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {formatDuration(session.durationSec)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="grid gap-3 md:hidden">
+              {sessions.length === 0 && !loading ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground border rounded-md">
+                  No sessions found.
+                </div>
+              ) : (
+                sessions.map((session) => (
+                  <div key={session.id} className="rounded-lg border bg-card p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium text-sm">{session.player.name}</h4>
+                        <p className="font-mono text-xs text-muted-foreground">{session.playerId}</p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">{session.server.name}</Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Joined At</p>
+                        <p className="text-muted-foreground">{new Date(session.joinedAt).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Left At</p>
+                        {session.leftAt ? (
+                          <p className="text-muted-foreground">{new Date(session.leftAt).toLocaleString()}</p>
+                        ) : (
+                          <span className="text-green-500 font-medium">Online Now</span>
+                        )}
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Duration</p>
+                        <p className="font-mono text-xs">{formatDuration(session.durationSec)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">

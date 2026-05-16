@@ -329,6 +329,63 @@ export default function PlayersPage() {
     setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
+  const renderPlayerCard = (player: Player) => (
+    <div key={player.id} className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex justify-between items-start">
+        <div className="flex items-center gap-2">
+          {player.isOnline ? (
+            <span className="pulse-dot"></span>
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></span>
+          )}
+          <h4 className="font-medium text-sm">{player.name}</h4>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-destructive hover:bg-destructive/10 -mt-2 -mr-2"
+          onClick={() => handleStopTracking(player.id)}
+          disabled={deletingId === player.id}
+        >
+          {deletingId === player.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div>
+          <p className="text-muted-foreground text-[10px] uppercase font-semibold">Server</p>
+          <Badge variant="outline" className="mt-0.5">{player.server.name}</Badge>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-[10px] uppercase font-semibold">Last Seen</p>
+          <p className="text-muted-foreground mt-0.5">{new Date(player.lastSeen).toLocaleString()}</p>
+        </div>
+        <div className="col-span-2">
+          <p className="text-muted-foreground text-[10px] uppercase font-semibold">Group</p>
+          <select
+            className="h-8 w-full mt-0.5 rounded-md border border-input bg-transparent px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            value={player.groupId || ""}
+            onChange={(e) => handleAssignGroup(player.id, e.target.value || null)}
+            disabled={assigningGroupId === player.id}
+          >
+            <option value="">Ungrouped</option>
+            {groups.map(g => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      <div className="flex gap-2 pt-2 border-t">
+        <Link href={`/players/${player.id}`} className="flex-1">
+          <Button variant="outline" size="sm" className="w-full gap-1">
+            Insights <ChevronRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+
   const renderPlayerRow = (player: Player) => (
     <TableRow key={player.id} className="group transition-colors">
       <TableCell>
@@ -514,110 +571,160 @@ export default function PlayersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border relative">
+          <div className="relative">
             {loading && (
-              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center">
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-md">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             )}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableHead
-                    label="Status"
-                    sortKey="status"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onToggle={toggleSort}
-                  />
-                  <SortableHead
-                    label="Name"
-                    sortKey="name"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onToggle={toggleSort}
-                  />
-                  <SortableHead
-                    label="Server"
-                    sortKey="server"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onToggle={toggleSort}
-                  />
-                  <SortableHead
-                    label="Last Seen"
-                    sortKey="lastSeen"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onToggle={toggleSort}
-                  />
-                  <SortableHead
-                    label="First Seen"
-                    sortKey="firstSeen"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onToggle={toggleSort}
-                  />
-                  <TableHead>Group</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.length === 0 && !loading ? (
+            
+            {/* Desktop View */}
+            <div className="rounded-md border hidden md:block">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No players found.
-                    </TableCell>
+                    <SortableHead
+                      label="Status"
+                      sortKey="status"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                    <SortableHead
+                      label="Name"
+                      sortKey="name"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                    <SortableHead
+                      label="Server"
+                      sortKey="server"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                    <SortableHead
+                      label="Last Seen"
+                      sortKey="lastSeen"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                    <SortableHead
+                      label="First Seen"
+                      sortKey="firstSeen"
+                      activeSortKey={sortKey}
+                      sortDir={sortDir}
+                      onToggle={toggleSort}
+                    />
+                    <TableHead>Group</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ) : (
-                  <>
-                    {groups.map(group => {
-                      const groupPlayers = groupedPlayers.get(group.id) || [];
-                      if (groupPlayers.length === 0) return null;
-                      const isExpanded = expandedGroups[group.id] !== false;
+                </TableHeader>
+                <TableBody>
+                  {players.length === 0 && !loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        No players found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {groups.map(group => {
+                        const groupPlayers = groupedPlayers.get(group.id) || [];
+                        if (groupPlayers.length === 0) return null;
+                        const isExpanded = expandedGroups[group.id] !== false;
 
-                      return (
-                        <Fragment key={group.id}>
+                        return (
+                          <Fragment key={group.id}>
+                            <TableRow 
+                              className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                              onClick={() => toggleGroupExpand(group.id)}
+                            >
+                              <TableCell colSpan={7} className="py-2">
+                                <div className="flex items-center gap-2 font-medium">
+                                  <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
+                                  {group.name}
+                                  <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupPlayers.length}</Badge>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {isExpanded && groupPlayers.map(renderPlayerRow)}
+                          </Fragment>
+                        );
+                      })}
+                      
+                      {/* Ungrouped Section */}
+                      {(groupedPlayers.get("ungrouped")?.length ?? 0) > 0 && (
+                        <Fragment key="ungrouped">
                           <TableRow 
                             className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
-                            onClick={() => toggleGroupExpand(group.id)}
+                            onClick={() => toggleGroupExpand("ungrouped")}
                           >
                             <TableCell colSpan={7} className="py-2">
-                              <div className="flex items-center gap-2 font-medium">
-                                <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
-                                {group.name}
-                                <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupPlayers.length}</Badge>
+                              <div className="flex items-center gap-2 font-medium text-muted-foreground">
+                                <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
+                                Ungrouped
+                                <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupedPlayers.get("ungrouped")?.length}</Badge>
                               </div>
                             </TableCell>
                           </TableRow>
-                          {isExpanded && groupPlayers.map(renderPlayerRow)}
+                          {expandedGroups["ungrouped"] !== false && groupedPlayers.get("ungrouped")?.map(renderPlayerRow)}
                         </Fragment>
-                      );
-                    })}
-                    
-                    {/* Ungrouped Section */}
-                    {(groupedPlayers.get("ungrouped")?.length ?? 0) > 0 && (
-                      <Fragment key="ungrouped">
-                        <TableRow 
-                          className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
-                          onClick={() => toggleGroupExpand("ungrouped")}
+                      )}
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="grid gap-4 md:hidden">
+              {players.length === 0 && !loading ? (
+                <div className="h-24 flex items-center justify-center text-muted-foreground border rounded-md">
+                  No players found.
+                </div>
+              ) : (
+                <>
+                  {groups.map(group => {
+                    const groupPlayers = groupedPlayers.get(group.id) || [];
+                    if (groupPlayers.length === 0) return null;
+                    const isExpanded = expandedGroups[group.id] !== false;
+
+                    return (
+                      <div key={group.id} className="space-y-3">
+                        <div 
+                          className="flex items-center gap-2 font-medium bg-muted/30 p-3 rounded-lg border cursor-pointer active:bg-muted/50 transition-colors"
+                          onClick={() => toggleGroupExpand(group.id)}
                         >
-                          <TableCell colSpan={7} className="py-2">
-                            <div className="flex items-center gap-2 font-medium text-muted-foreground">
-                              <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
-                              Ungrouped
-                              <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupedPlayers.get("ungrouped")?.length}</Badge>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        {expandedGroups["ungrouped"] !== false && groupedPlayers.get("ungrouped")?.map(renderPlayerRow)}
-                      </Fragment>
-                    )}
-                  </>
-                )}
-              </TableBody>
-            </Table>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: group.color || '#ccc' }} />
+                          <span className="truncate">{group.name}</span>
+                          <Badge variant="secondary" className="ml-auto font-normal text-xs">{groupPlayers.length}</Badge>
+                        </div>
+                        {isExpanded && <div className="grid gap-3">{groupPlayers.map(renderPlayerCard)}</div>}
+                      </div>
+                    );
+                  })}
+
+                  {(groupedPlayers.get("ungrouped")?.length ?? 0) > 0 && (
+                    <div className="space-y-3">
+                      <div 
+                        className="flex items-center gap-2 font-medium text-muted-foreground bg-muted/30 p-3 rounded-lg border cursor-pointer active:bg-muted/50 transition-colors"
+                        onClick={() => toggleGroupExpand("ungrouped")}
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
+                        <span className="truncate">Ungrouped</span>
+                        <Badge variant="secondary" className="ml-auto font-normal text-xs">{groupedPlayers.get("ungrouped")?.length}</Badge>
+                      </div>
+                      {expandedGroups["ungrouped"] !== false && <div className="grid gap-3">{groupedPlayers.get("ungrouped")?.map(renderPlayerCard)}</div>}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
