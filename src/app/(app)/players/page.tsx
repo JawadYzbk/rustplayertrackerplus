@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, Fragment } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -25,15 +25,32 @@ import {
   ArrowUp,
   ArrowUpDown,
   ChevronRight,
+  ChevronDown,
   Loader2,
   Search,
   Users,
   Trash2,
+  Settings,
+  Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type PlayerSortKey = "name" | "server" | "lastSeen" | "firstSeen" | "status";
 type SortDir = "asc" | "desc";
+
+interface Group {
+  id: string;
+  name: string;
+  color: string | null;
+  _count?: { players: number };
+}
 
 interface Player {
   id: string;
@@ -44,6 +61,8 @@ interface Player {
   lastSeen: string;
   isOnline: boolean;
   rustPlusNotifications: boolean;
+  groupId: string | null;
+  group?: { id: string; name: string; color: string | null } | null;
 }
 
 interface SortableHeadProps {
@@ -87,6 +106,7 @@ function SortableHead({
 
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -101,9 +121,43 @@ export default function PlayersPage() {
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingNotifId, setTogglingNotifId] = useState<string | null>(null);
+  const [assigningGroupId, setAssigningGroupId] = useState<string | null>(null);
+
+  // Group Management State
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupColor, setNewGroupColor] = useState("#3b82f6");
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     axios.get("/api/servers").then((res) => setServers(res.data));
+  }, []);
+
+  const fetchGroups = useCallback(async () => {
+    try {
+      const { data } = await axios.get("/api/groups");
+      setGroups(data);
+      // Automatically expand all groups initially if not set
+      setExpandedGroups(prev => {
+        const next = { ...prev };
+        let changed = false;
+        data.forEach((g: Group) => {
+          if (next[g.id] === undefined) {
+            next[g.id] = true;
+            changed = true;
+          }
+        });
+        if (next["ungrouped"] === undefined) {
+          next["ungrouped"] = true;
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+    } catch {
+      toast.error("Failed to fetch groups");
+    }
   }, []);
 
   const fetchPlayers = useCallback(async () => {
@@ -120,6 +174,10 @@ export default function PlayersPage() {
       setLoading(false);
     }
   }, [search, page]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -188,6 +246,53 @@ export default function PlayersPage() {
     }
   };
 
+  const handleAssignGroup = async (playerId: string, groupId: string | null) => {
+    setAssigningGroupId(playerId);
+    try {
+      await axios.patch(`/api/players/${playerId}`, {
+        groupId,
+      });
+      toast.success("Group assigned");
+      fetchPlayers();
+      fetchGroups(); // refresh counts
+    } catch {
+      toast.error("Failed to assign group");
+    } finally {
+      setAssigningGroupId(null);
+    }
+  };
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) return;
+    setCreatingGroup(true);
+    try {
+      await axios.post("/api/groups", { name: newGroupName.trim(), color: newGroupColor });
+      toast.success("Group created");
+      setNewGroupName("");
+      fetchGroups();
+    } catch {
+      toast.error("Failed to create group");
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm("Delete this group? Players in this group will become ungrouped.")) return;
+    setDeletingGroupId(groupId);
+    try {
+      await axios.delete(`/api/groups/${groupId}`);
+      toast.success("Group deleted");
+      fetchGroups();
+      fetchPlayers();
+    } catch {
+      toast.error("Failed to delete group");
+    } finally {
+      setDeletingGroupId(null);
+    }
+  };
+
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
       let cmp = 0;
@@ -200,10 +305,97 @@ export default function PlayersPage() {
     });
   }, [players, sortKey, sortDir]);
 
+  const groupedPlayers = useMemo(() => {
+    const map = new Map<string, Player[]>();
+    map.set("ungrouped", []);
+    groups.forEach(g => map.set(g.id, []));
+
+    sortedPlayers.forEach(p => {
+      if (p.groupId && map.has(p.groupId)) {
+        map.get(p.groupId)!.push(p);
+      } else {
+        map.get("ungrouped")!.push(p);
+      }
+    });
+    return map;
+  }, [sortedPlayers, groups]);
+
   const toggleSort = (key: PlayerSortKey) => {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("desc"); }
   };
+
+  const toggleGroupExpand = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  const renderPlayerRow = (player: Player) => (
+    <TableRow key={player.id} className="group transition-colors">
+      <TableCell>
+        {player.isOnline ? (
+          <div className="flex items-center gap-2">
+            <span className="pulse-dot"></span>
+            <span className="text-xs font-medium text-green-500">Online</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></span>
+            <span className="text-xs font-medium text-muted-foreground">Offline</span>
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="font-semibold text-foreground">
+        <div className="flex items-center gap-2">
+          {player.name}
+        </div>
+      </TableCell>
+      <TableCell className="text-muted-foreground text-xs">
+        <Badge variant="outline">{player.server.name}</Badge>
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {new Date(player.lastSeen).toLocaleString()}
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {new Date(player.firstSeen).toLocaleDateString()}
+      </TableCell>
+      <TableCell>
+        <select
+          className="h-8 w-32 rounded-md border border-input bg-transparent px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          value={player.groupId || ""}
+          onChange={(e) => handleAssignGroup(player.id, e.target.value || null)}
+          disabled={assigningGroupId === player.id}
+        >
+          <option value="">Ungrouped</option>
+          {groups.map(g => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Link href={`/players/${player.id}`}>
+            <Button variant="ghost" size="sm" className="gap-1">
+              Insights <ChevronRight className="h-4 w-4" />
+            </Button>
+          </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => handleStopTracking(player.id)}
+            disabled={deletingId === player.id}
+            title="Stop Tracking"
+          >
+            {deletingId === player.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -212,9 +404,62 @@ export default function PlayersPage() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">Players</h1>
           <p className="text-muted-foreground">View and search tracked players across all servers.</p>
         </div>
-        <Button onClick={() => setShowAddForm((value) => !value)}>
-          {showAddForm ? "Cancel" : "Add Player Manually"}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={manageGroupsOpen} onOpenChange={setManageGroupsOpen}>
+            <DialogTrigger render={<Button variant="outline" className="gap-2" />}>
+              <Settings className="h-4 w-4" /> Manage Groups
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Manage Player Groups</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6">
+                <form onSubmit={handleCreateGroup} className="flex gap-3 items-end">
+                  <div className="space-y-2 flex-1">
+                    <label className="text-sm font-medium">New Group Name</label>
+                    <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="e.g. Clan Enemies" required />
+                  </div>
+                  <div className="space-y-2 w-20">
+                    <label className="text-sm font-medium">Color</label>
+                    <Input type="color" className="p-1 h-10 w-full" value={newGroupColor} onChange={e => setNewGroupColor(e.target.value)} />
+                  </div>
+                  <Button type="submit" disabled={creatingGroup}>
+                    {creatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  </Button>
+                </form>
+
+                <div className="border rounded-md divide-y max-h-64 overflow-y-auto">
+                  {groups.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">No groups created yet.</div>
+                  ) : (
+                    groups.map(group => (
+                      <div key={group.id} className="flex items-center justify-between p-3 bg-card">
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
+                          <span className="font-medium text-sm">{group.name}</span>
+                          <Badge variant="secondary" className="text-xs">{group._count?.players || 0} players</Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                          onClick={() => handleDeleteGroup(group.id)}
+                          disabled={deletingGroupId === group.id}
+                        >
+                          {deletingGroupId === group.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Button onClick={() => setShowAddForm((value) => !value)}>
+            {showAddForm ? "Cancel" : "Add Player Manually"}
+          </Button>
+        </div>
       </div>
 
       {showAddForm && (
@@ -313,7 +558,7 @@ export default function PlayersPage() {
                     sortDir={sortDir}
                     onToggle={toggleSort}
                   />
-                  <TableHead>Rust+ Alerts</TableHead>
+                  <TableHead>Group</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -325,78 +570,51 @@ export default function PlayersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sortedPlayers.map((player) => (
-                    <TableRow key={player.id}>
-                      <TableCell>
-                        {player.isOnline ? (
-                          <div className="flex items-center gap-2">
-                            <span className="pulse-dot"></span>
-                            <span className="text-xs font-medium text-green-500">Online</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></span>
-                            <span className="text-xs font-medium text-muted-foreground">Offline</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold text-foreground">
-                        {player.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        <Badge variant="outline">{player.server.name}</Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(player.lastSeen).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(player.firstSeen).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant={player.rustPlusNotifications ? "secondary" : "outline"}
-                          size="sm"
-                          disabled={togglingNotifId === player.id}
-                          onClick={() =>
-                            handleToggleRustPlusNotifications(
-                              player.id,
-                              player.rustPlusNotifications
-                            )
-                          }
-                        >
-                          {togglingNotifId === player.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : player.rustPlusNotifications ? (
-                            "Enabled"
-                          ) : (
-                            "Disabled"
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/players/${player.id}`}>
-                            <Button variant="ghost" size="sm" className="gap-1">
-                              Insights <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleStopTracking(player.id)}
-                            disabled={deletingId === player.id}
+                  <>
+                    {groups.map(group => {
+                      const groupPlayers = groupedPlayers.get(group.id) || [];
+                      if (groupPlayers.length === 0) return null;
+                      const isExpanded = expandedGroups[group.id] !== false;
+
+                      return (
+                        <Fragment key={group.id}>
+                          <TableRow 
+                            className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                            onClick={() => toggleGroupExpand(group.id)}
                           >
-                            {deletingId === player.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                            <TableCell colSpan={7} className="py-2">
+                              <div className="flex items-center gap-2 font-medium">
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
+                                {group.name}
+                                <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupPlayers.length}</Badge>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && groupPlayers.map(renderPlayerRow)}
+                        </Fragment>
+                      );
+                    })}
+                    
+                    {/* Ungrouped Section */}
+                    {(groupedPlayers.get("ungrouped")?.length ?? 0) > 0 && (
+                      <Fragment key="ungrouped">
+                        <TableRow 
+                          className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                          onClick={() => toggleGroupExpand("ungrouped")}
+                        >
+                          <TableCell colSpan={7} className="py-2">
+                            <div className="flex items-center gap-2 font-medium text-muted-foreground">
+                              <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
+                              Ungrouped
+                              <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupedPlayers.get("ungrouped")?.length}</Badge>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {expandedGroups["ungrouped"] !== false && groupedPlayers.get("ungrouped")?.map(renderPlayerRow)}
+                      </Fragment>
+                    )}
+                  </>
                 )}
               </TableBody>
             </Table>

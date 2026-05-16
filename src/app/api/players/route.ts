@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       orderBy: { lastSeen: "desc" },
       skip,
       take: limit,
-      include: { server: { select: { name: true } } },
+      include: { server: { select: { name: true } }, group: true },
     }),
     prisma.player.count({ where }),
   ]);

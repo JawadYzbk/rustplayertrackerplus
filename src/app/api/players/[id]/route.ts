@@ -10,6 +10,7 @@ const UpdatePlayerSchema = z
   .object({
     isTracking: z.boolean().optional(),
     rustPlusNotifications: z.boolean().optional(),
+    groupId: z.string().nullable().optional(),
   })
   .strict();
 

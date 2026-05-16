@@ -22,6 +22,7 @@ model AppUser {
 
   servers     Server[]
   players     Player[]
+  groups      PlayerGroup[]
   sessions    Session[]
   dailyStats  PlayerDailyStat[]
   hourlyStats PlayerHourlyStat[]
@@ -59,12 +60,29 @@ model Player {
 
   user        AppUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
   server      Server            @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)
+  groupId     String?
+  group       PlayerGroup?      @relation(fields: [userId, groupId], references: [userId, id], onDelete: SetNull)
   sessions    Session[]
   dailyStats  PlayerDailyStat[]
   hourlyStats PlayerHourlyStat[]
 
   @@id([userId, id])
   @@index([userId, serverId])
+  @@index([userId, groupId])
+}
+
+model PlayerGroup {
+  userId    String
+  id        String
+  name      String
+  color     String? // Optional hex or tailwind color class
+  createdAt DateTime @default(now())
+
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  players   Player[]
+
+  @@id([userId, id])
+  @@index([userId])
 }
 
 model Session {
