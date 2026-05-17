@@ -57,7 +57,10 @@ interface RustPlusCredentials {
 }
 
 interface RustPlusClient {
-  on(event: "connected" | "disconnected" | "error" | "message" | "connecting" | "request", listener: (err?: any) => void): void;
+  on(
+    event: "connected" | "disconnected" | "error" | "message" | "connecting" | "request",
+    listener: (err?: unknown) => void
+  ): void;
   connect(): void;
   disconnect(): void;
   sendTeamMessage(message: string): void;
@@ -158,8 +161,7 @@ async function sendRustPlusTeamMessage(
 
 export function startWorker(): void {
   console.log("[Worker] Starting BattleMetrics poll worker…");
-  void runPoll(); // immediate first run
-  setInterval(() => void runPoll(), POLL_INTERVAL_MS);
+  void runPollLoop();
 
   // Keep Render free tier awake by self-pinging every 10 minutes
   if (process.env.NODE_ENV === "production" && process.env.RENDER_EXTERNAL_URL) {
@@ -175,12 +177,27 @@ export function startWorker(): void {
   }
 }
 
+async function runPollLoop(): Promise<void> {
+  try {
+    await runPoll();
+  } finally {
+    // Schedule next run even if previous run failed
+    setTimeout(() => void runPollLoop(), POLL_INTERVAL_MS);
+  }
+}
+
 async function runPoll(): Promise<void> {
   try {
     const servers = await prisma.server.findMany({
       select: { userId: true, id: true },
     });
-    await Promise.allSettled(servers.map((s) => pollServer(s.userId, s.id)));
+
+    // Process servers in small batches to prevent DB connection exhaustion
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < servers.length; i += BATCH_SIZE) {
+      const batch = servers.slice(i, i + BATCH_SIZE);
+      await Promise.allSettled(batch.map((s) => pollServer(s.userId, s.id)));
+    }
   } catch (err) {
     console.error("[Worker] Poll cycle error:", err);
   }
@@ -245,20 +262,42 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
     const now = new Date();
 
     // ── Handle tracked players (join / stay) ───────────────────────────────
-    for (const bm of onlinePlayers) {
-      const tracked = trackedById.get(bm.id);
-      if (tracked) {
-        const sessionStart = sessionMap.get(bm.id) || now;
-        await handlePlayerOnline(
-          userId,
-          bm.id,
-          bm.attributes?.name || "Unknown",
-          serverId,
-          now,
-          sessionStart,
-          tracked.rustPlusNotifications,
-          rustPlusCredentials
-        );
+    const trackedOnline = onlinePlayers
+      .map((bm) => ({ bm, tracked: trackedById.get(bm.id) }))
+      .filter(
+        (x): x is { bm: BMPlayerIncluded; tracked: { id: string; rustPlusNotifications: boolean } } =>
+          !!x.tracked
+      );
+
+    if (trackedOnline.length > 0) {
+      const playerIds = trackedOnline.map((x) => x.bm.id);
+
+      // Update last seen for all online tracked players at once
+      await prisma.player.updateMany({
+        where: { userId, id: { in: playerIds } },
+        data: { lastSeen: now },
+      });
+
+      // Find which ones already have open sessions
+      const openSessions = await prisma.session.findMany({
+        where: { userId, serverId, playerId: { in: playerIds }, leftAt: null },
+        select: { playerId: true },
+      });
+      const hasOpenSession = new Set(openSessions.map((s) => s.playerId));
+
+      for (const { bm, tracked } of trackedOnline) {
+        if (!hasOpenSession.has(bm.id)) {
+          const sessionStart = sessionMap.get(bm.id) || now;
+          await handlePlayerJoin(
+            userId,
+            bm.id,
+            bm.attributes?.name || "Unknown",
+            serverId,
+            sessionStart,
+            tracked.rustPlusNotifications,
+            rustPlusCredentials
+          );
+        }
       }
     }
 
@@ -269,43 +308,36 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
   }
 }
 
-// ─── Player Join / Stay ───────────────────────────────────────────────────────
+// ─── Player Join ─────────────────────────────────────────────────────────────
 
-async function handlePlayerOnline(
+async function handlePlayerJoin(
   userId: string,
   playerId: string,
   name: string,
   serverId: string,
-  now: Date,
   sessionStart: Date,
   rustPlusNotifications: boolean,
   rustPlusCredentials: RustPlusCredentials | null
 ): Promise<void> {
-  // Update last seen
+  // Ensure name is up to date (updateMany doesn't support individual names)
   await prisma.player.update({
     where: { userId_id: { userId, id: playerId } },
-    data: { name, lastSeen: now },
+    data: { name },
   });
 
-  // Open session if none exists
-  const openSession = await prisma.session.findFirst({
-    where: { userId, playerId, serverId, leftAt: null },
+  // Open session
+  await prisma.session.create({
+    data: { userId, playerId, serverId, joinedAt: sessionStart },
   });
 
-  if (!openSession) {
-    await prisma.session.create({
-      data: { userId, playerId, serverId, joinedAt: sessionStart },
-    });
-
-    if (rustPlusNotifications && rustPlusCredentials) {
-      try {
-        await sendRustPlusTeamMessage(
-          rustPlusCredentials,
-          `[Tracker] ${name} joined the server.`
-        );
-      } catch (error) {
-        console.error(`[Worker] Failed Rust+ join message for ${name}:`, error);
-      }
+  if (rustPlusNotifications && rustPlusCredentials) {
+    try {
+      await sendRustPlusTeamMessage(
+        rustPlusCredentials,
+        `[Tracker] ${name} joined the server.`
+      );
+    } catch (error) {
+      console.error(`[Worker] Failed Rust+ join message for ${name}:`, error);
     }
   }
 }
