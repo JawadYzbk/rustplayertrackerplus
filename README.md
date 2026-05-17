@@ -113,8 +113,8 @@ Online Players list per server (searchable+ sortable)
 <img width="695" height="1130" alt="image" src="https://github.com/user-attachments/assets/f2cab2cf-5c74-4a11-b632-96edb1b62022" />
 
 
-Tracked Players List 
-<img width="1921" height="972" alt="image" src="https://github.com/user-attachments/assets/9137ea0b-140f-41ff-9d2e-381cb358cc5d" />
+Tracked Players List with grouping
+<img width="1027" height="976" alt="image" src="https://github.com/user-attachments/assets/014afa6e-26f8-463f-9cc8-12df41242aec" />
 
 
 ### Player Page:
