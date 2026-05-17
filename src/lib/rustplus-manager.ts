@@ -2,6 +2,12 @@ import { prisma } from "./prisma";
 // @ts-ignore
 import RustPlus from "@liamcottle/rustplus.js";
 
+// Polyfill XMLHttpRequest for protobufjs in Node.js
+if (typeof XMLHttpRequest === "undefined") {
+  // @ts-ignore
+  global.XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+}
+
 interface ConnectionEntry {
   key: string;             // hash of ip:port:playerId:playerToken
   serverKey: string;       // ip:port (for sharing global data)
