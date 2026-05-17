@@ -48,6 +48,7 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
   const [editingDeviceId, setEditingDeviceId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: "", customCommand: "" });
   const [saving, setSaving] = useState(false);
+  const [controllingId, setControllingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -67,6 +68,18 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
       toast.error("Failed to load server details");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleControlDevice(id: string, state: boolean) {
+    setControllingId(id);
+    try {
+      await axios.post(`/api/servers/${serverId}/devices/${id}`, { state });
+      toast.success(`Device turned ${state ? "on" : "off"}`);
+    } catch (error) {
+      toast.error(axios.isAxiosError(error) ? error.response?.data?.error || "Failed to control device" : "Failed to control device");
+    } finally {
+      setControllingId(null);
     }
   }
 
@@ -283,6 +296,31 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                         )}
                       </div>
 
+                      <div className="flex items-center justify-between pt-1 border-t border-muted pt-3">
+                        <div className="flex gap-2 flex-1">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="h-8 flex-1 bg-green-600 hover:bg-green-700 text-white font-bold"
+                            onClick={() => handleControlDevice(device.id, true)}
+                            disabled={controllingId === device.id || !device.isActive}
+                          >
+                            {controllingId === device.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Power className="w-3 h-3 mr-1.5" />}
+                            ON
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="h-8 flex-1 font-bold"
+                            onClick={() => handleControlDevice(device.id, false)}
+                            disabled={controllingId === device.id || !device.isActive}
+                          >
+                            {controllingId === device.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <PowerOff className="w-3 h-3 mr-1.5" />}
+                            OFF
+                          </Button>
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-between pt-1">
                         <div className="flex items-center gap-2">
                            <span className={`h-2 w-2 rounded-full ${device.isActive ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-muted'}`} />
@@ -298,7 +336,7 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                         >
                           {device.isActive ? (
                             <>
-                              <PowerOff className="w-3 h-3" /> Disable
+                              <Settings className="w-3 h-3" /> Disable
                             </>
                           ) : (
                             <>

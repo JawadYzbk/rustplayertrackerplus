@@ -117,6 +117,46 @@ async function createConnection(credKey: string, serverKey: string, creds: any) 
   return entry;
 }
 
+/**
+ * Directly control a smart device state.
+ */
+export async function setDeviceState(userId: string, serverId: string, deviceId: string, state: boolean) {
+  const server = await prisma.server.findUnique({
+    where: { userId_id: { userId, id: serverId } },
+  });
+
+  if (!server || !server.rustPlusIp || !server.rustPlusPort || !server.rustPlusPlayerId || !server.rustPlusPlayerToken) {
+    throw new Error("Server or Rust+ credentials not found");
+  }
+
+  const credKey = `${server.rustPlusIp}:${server.rustPlusPort}:${server.rustPlusPlayerId}:${server.rustPlusPlayerToken}`;
+  const serverKey = `${server.rustPlusIp}:${server.rustPlusPort}`;
+
+  let entry = connectionPool.get(credKey);
+  if (!entry) {
+    entry = await createConnection(credKey, serverKey, {
+      ip: server.rustPlusIp,
+      port: server.rustPlusPort,
+      playerId: server.rustPlusPlayerId,
+      playerToken: server.rustPlusPlayerToken,
+    });
+    // Wait a bit for connection
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+
+  entry.lastUsed = Date.now();
+
+  return new Promise((resolve, reject) => {
+    entry.client.setEntityValue(deviceId, state, (res: any) => {
+      if (res.error) {
+        reject(new Error(res.error.error || "Failed to set device state"));
+      } else {
+        resolve(res);
+      }
+    });
+  });
+}
+
 async function startSharedDataPolling(entry: ConnectionEntry) {
   // This connection is the "Data Provider" for its server.
   // It fetches global info (markers, time) once and we could cache it.

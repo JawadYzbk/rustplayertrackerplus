@@ -48,13 +48,17 @@ function extractPairing(data) {
   try {
     body = JSON.parse(map['body'] || '{}');
   } catch {
+    send({ type: 'log', level: 'error', message: 'Failed to parse pairing body: ' + map['body'] });
     return null;
   }
 
   // Handle server pairing
   if (body.type === 'server') {
     const { ip, port, playerId, playerToken } = body;
-    if (!ip || !port || !playerId || !playerToken) return null;
+    if (!ip || !port || !playerId || !playerToken) {
+      send({ type: 'log', level: 'warn', message: 'Server pairing missing required fields: ' + JSON.stringify(body) });
+      return null;
+    }
 
     return {
       type: 'server',
@@ -68,14 +72,14 @@ function extractPairing(data) {
   }
 
   // Handle smart device pairing
-  if (body.type === 'device') {
+  if (body.type === 'device' || body.entityType) {
     const { id, name, entityType, ip, port, playerId, playerToken } = body;
     // Note: playerId/playerToken/ip/port might be missing if it's a sub-device notification
     // But usually they are there or we can infer them if we know which server is active.
     return {
       type: 'device',
-      id: String(id),
-      name: name || 'Smart Device',
+      id: String(id || body.entityId),
+      name: name || body.entityName || 'Smart Device',
       entityType: entityType || 'switch',
       ip,
       port,
@@ -84,6 +88,7 @@ function extractPairing(data) {
     };
   }
 
+  send({ type: 'log', level: 'info', message: 'Unrecognized pairing body type: ' + (body.type || 'none') + ' - ' + JSON.stringify(body) });
   return null;
 }
 
