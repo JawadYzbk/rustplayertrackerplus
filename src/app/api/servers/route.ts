@@ -7,6 +7,7 @@ import {
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import axios from "axios";
+import { touchConnection } from "@/lib/rustplus-manager";
 
 const CreateServerSchema = z.object({
   id: z.string().min(1, "Server ID required"),
@@ -27,6 +28,14 @@ export async function GET() {
       _count: { select: { players: true, sessions: true } },
     },
   });
+
+  // Lazy-load Rust+ connections for servers that have credentials
+  for (const server of servers) {
+    if (server.rustPlusIp) {
+      void touchConnection(userId, server.id);
+    }
+  }
+
   return Response.json(servers);
 }
 

@@ -146,6 +146,17 @@ export default function PlayersPage() {
   const [editColor, setEditColor] = useState("");
   const [updatingGroup, setUpdatingGroup] = useState(false);
 
+  const getGroupName = useCallback((groupId: string | null) => {
+    if (!groupId || groupId === "ungrouped") return "Ungrouped";
+    const group = groups.find(g => g.id === groupId);
+    return group ? group.name : "Ungrouped";
+  }, [groups]);
+
+  const getServerName = useCallback((serverId: string) => {
+    const server = servers.find(s => s.id === serverId);
+    return server ? server.name : "Select a server...";
+  }, [servers]);
+
   useEffect(() => {
     axios.get("/api/servers").then((res) => setServers(res.data));
   }, []);
@@ -390,16 +401,20 @@ export default function PlayersPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="flex flex-col gap-2.5 text-xs">
         <div>
           <p className="text-muted-foreground text-[10px] uppercase font-semibold">Server</p>
-          <Badge variant="outline" className="mt-0.5">{player.server.name}</Badge>
+          <div className="mt-1 flex flex-wrap">
+            <Badge variant="outline" className="h-auto whitespace-normal break-all py-0.5 px-2">
+              {player.server.name}
+            </Badge>
+          </div>
         </div>
         <div>
           <p className="text-muted-foreground text-[10px] uppercase font-semibold">Last Seen</p>
-          <p className="text-muted-foreground mt-0.5">{new Date(player.lastSeen).toLocaleString()}</p>
+          <p className="text-muted-foreground mt-1">{new Date(player.lastSeen).toLocaleString()}</p>
         </div>
-        <div className="col-span-2">
+        <div>
           <p className="text-muted-foreground text-[10px] uppercase font-semibold mb-1">Group</p>
           <Select
             value={player.groupId || "ungrouped"}
@@ -407,7 +422,9 @@ export default function PlayersPage() {
             disabled={assigningGroupId === player.id}
           >
             <SelectTrigger className="w-full h-8 text-xs">
-              <SelectValue placeholder="Ungrouped" />
+              <span data-slot="select-value" className="flex flex-1 text-left line-clamp-1">
+                {getGroupName(player.groupId)}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ungrouped">Ungrouped</SelectItem>
@@ -465,7 +482,9 @@ export default function PlayersPage() {
           disabled={assigningGroupId === player.id}
         >
           <SelectTrigger className="w-32 h-8 text-xs">
-            <SelectValue placeholder="Ungrouped" />
+            <span data-slot="select-value" className="flex flex-1 text-left line-clamp-1">
+              {getGroupName(player.groupId)}
+            </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ungrouped">Ungrouped</SelectItem>
@@ -656,7 +675,9 @@ export default function PlayersPage() {
                   onValueChange={(v) => v && setNewPlayerServer(v)}
                 >
                   <SelectTrigger className="w-full h-10">
-                    <SelectValue placeholder="Select a server..." />
+                    <span data-slot="select-value" className="flex flex-1 text-left line-clamp-1">
+                      {getServerName(newPlayerServer)}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {servers.map(s => (

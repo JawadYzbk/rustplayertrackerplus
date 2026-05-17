@@ -5,6 +5,7 @@ import {
 } from "@/lib/current-user";
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { touchConnection } from "@/lib/rustplus-manager";
 
 const QuerySchema = z.object({
   serverId: z.string().optional(),
@@ -40,6 +41,10 @@ export async function GET(req: NextRequest) {
   } = { userId, isTracking: true };
   if (serverId) where.serverId = serverId;
   if (search) where.name = { contains: search, mode: "insensitive" };
+
+  if (serverId) {
+    void touchConnection(userId, serverId);
+  }
 
   const [players, total] = await Promise.all([
     prisma.player.findMany({

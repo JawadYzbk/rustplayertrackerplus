@@ -22,6 +22,7 @@ model AppUser {
 
   servers     Server[]
   players     Player[]
+  devices     SmartDevice[]
   groups      PlayerGroup[]
   sessions    Session[]
   dailyStats  PlayerDailyStat[]
@@ -43,9 +44,26 @@ model Server {
   user     AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
   players  Player[]
   sessions Session[]
+  devices  SmartDevice[]
 
   @@id([userId, id])
   @@index([userId, createdAt])
+}
+
+model SmartDevice {
+  userId    String
+  id        String   // Entity ID from Rust+
+  serverId  String
+  name      String
+  type      String   // 'switch', 'alarm', etc.
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(true)
+
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server Server  @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)
+
+  @@id([userId, id])
+  @@index([userId, serverId])
 }
 
 model Player {

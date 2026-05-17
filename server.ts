@@ -10,6 +10,7 @@ import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
 import { startWorker } from "./src/lib/worker";
+import { startRustPlusManager } from "./src/lib/rustplus-manager";
 
 const port = parseInt(process.env.PORT ?? "3000", 10);
 const dev = process.env.NODE_ENV !== "production";
@@ -20,6 +21,9 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   // ── Start background worker ────────────────────────────────────────────────
   startWorker();
+
+  // ── Start Rust+ manager ────────────────────────────────────────────────────
+  void startRustPlusManager();
 
   // ── Start HTTP server ──────────────────────────────────────────────────────
   createServer((req, res) => {

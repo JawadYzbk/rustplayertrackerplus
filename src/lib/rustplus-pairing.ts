@@ -33,7 +33,7 @@ function appDataToMap(appData) {
   return map;
 }
 
-function extractServerPairing(data) {
+function extractPairing(data) {
   // data is the raw DataMessageStanza object emitted by push-receiver
   const appData = data && (data.appData || data.app_data);
   if (!appData) return null;
@@ -51,21 +51,40 @@ function extractServerPairing(data) {
     return null;
   }
 
-  // Ensure it's actually a server pairing payload
-  if (body.type !== 'server') return null;
+  // Handle server pairing
+  if (body.type === 'server') {
+    const { ip, port, playerId, playerToken } = body;
+    if (!ip || !port || !playerId || !playerToken) return null;
 
-  const { ip, port, playerId, playerToken } = body;
-  if (!ip || !port || !playerId || !playerToken) return null;
+    return {
+      type: 'server',
+      id: body.id || body.serverId || (ip + ':' + port),
+      name: body.name || body.serverName || undefined,
+      ip,
+      port,
+      playerId,
+      playerToken,
+    };
+  }
 
-  return {
-    type: 'server',
-    id: body.id || body.serverId || (ip + ':' + port),
-    name: body.name || body.serverName || undefined,
-    ip,
-    port,
-    playerId,
-    playerToken,
-  };
+  // Handle smart device pairing
+  if (body.type === 'device') {
+    const { id, name, entityType, ip, port, playerId, playerToken } = body;
+    // Note: playerId/playerToken/ip/port might be missing if it's a sub-device notification
+    // But usually they are there or we can infer them if we know which server is active.
+    return {
+      type: 'device',
+      id: String(id),
+      name: name || 'Smart Device',
+      entityType: entityType || 'switch',
+      ip,
+      port,
+      playerId,
+      playerToken,
+    };
+  }
+
+  return null;
 }
 
 let rawInput = '';
@@ -104,41 +123,30 @@ process.stdin.on('end', async () => {
     client.on('ON_DATA_RECEIVED', (data) => {
       send({ type: 'log', level: 'info', message: 'Push notification received.' });
       
-      // Debug logging:
-      try {
-        const appData = data && (data.appData || data.app_data);
-        const map = appDataToMap(appData);
-        send({ type: 'log', level: 'info', message: 'FCM Map: ' + JSON.stringify(map) });
-      } catch (e) {}
-
-      const pairing = extractServerPairing(data);
+      const pairing = extractPairing(data);
       if (pairing) {
         send({ type: 'pairing', pairing });
-        clearTimeout(timer);
-        try { client.destroy(); } catch {}
-        process.exit(0);
-      } else {
-        send({ type: 'log', level: 'warn', message: 'Notification received but no server pairing found.' });
+        // Don't exit immediately if it's a device pairing, maybe they want to pair more?
+        // But for server pairing we usually want to finish.
+        if (pairing.type === 'server') {
+          clearTimeout(timer);
+          try { client.destroy(); } catch {}
+          process.exit(0);
+        }
       }
     });
 
     client.on('ON_NOTIFICATION_RECEIVED', (data) => {
       send({ type: 'log', level: 'info', message: 'Encrypted push notification received.' });
-      try {
-        const appData = data.object && (data.object.appData || data.object.app_data);
-        const map = appDataToMap(appData);
-        send({ type: 'log', level: 'info', message: 'Encrypted FCM Map: ' + JSON.stringify(map) });
-      } catch (e) {}
       
-      // Try extracting from data.notification or data.object
-      const pairing = extractServerPairing(data.notification) || extractServerPairing(data.object) || extractServerPairing(data);
+      const pairing = extractPairing(data.notification) || extractPairing(data.object) || extractPairing(data);
       if (pairing) {
         send({ type: 'pairing', pairing });
-        clearTimeout(timer);
-        try { client.destroy(); } catch {}
-        process.exit(0);
-      } else {
-        send({ type: 'log', level: 'warn', message: 'Encrypted notification received but no server pairing found.' });
+        if (pairing.type === 'server') {
+          clearTimeout(timer);
+          try { client.destroy(); } catch {}
+          process.exit(0);
+        }
       }
     });
 
@@ -197,6 +205,19 @@ interface PairingServerPayload {
   playerToken: string;
 }
 
+interface PairingDevicePayload {
+  type: "device";
+  id: string;
+  name: string;
+  entityType: string;
+  ip?: string;
+  port?: string | number;
+  playerId?: string;
+  playerToken?: string;
+}
+
+type PairingPayload = PairingServerPayload | PairingDevicePayload;
+
 interface LogEntry {
   timestamp: number;
   level: "info" | "warn" | "error" | "success";
@@ -210,7 +231,7 @@ interface ListenerState {
   status: "starting" | "listening" | "completed" | "expired" | "error";
   message: string;
   logs: LogEntry[];
-  lastPairing: PairingServerPayload | null;
+  lastPairing: PairingPayload | null;
   stop?: () => void;
 }
 
@@ -272,7 +293,7 @@ function appDataToMap(appData: Array<{ key: string; value: string }>): Record<st
   return map;
 }
 
-function extractServerPairing(data: unknown): PairingServerPayload | null {
+function extractPairing(data: unknown): PairingPayload | null {
   if (!data || typeof data !== "object") return null;
 
   const obj = data as Record<string, unknown>;
@@ -293,21 +314,75 @@ function extractServerPairing(data: unknown): PairingServerPayload | null {
     return null;
   }
 
-  // Ensure it's actually a server pairing payload
-  if (body.type !== "server") return null;
+  // Handle server pairing
+  if (body.type === "server") {
+    const { ip, port, playerId, playerToken } = body as Record<string, string>;
+    if (!ip || !port || !playerId || !playerToken) return null;
 
-  const { ip, port, playerId, playerToken } = body as Record<string, string>;
-  if (!ip || !port || !playerId || !playerToken) return null;
+    return {
+      type: "server",
+      id: (body["id"] ?? body["serverId"] ?? `${ip}:${port}`) as string,
+      name: (body["name"] ?? body["serverName"]) as string | undefined,
+      ip,
+      port,
+      playerId,
+      playerToken,
+    };
+  }
 
-  return {
-    type: "server",
-    id: (body["id"] ?? body["serverId"] ?? `${ip}:${port}`) as string,
-    name: (body["name"] ?? body["serverName"]) as string | undefined,
-    ip,
-    port,
-    playerId,
-    playerToken,
-  };
+  // Handle device pairing
+  if (body.type === "device") {
+    const { id, name, entityType, ip, port, playerId, playerToken } = body as Record<string, string>;
+    return {
+      type: "device",
+      id: String(id),
+      name: name || "Smart Device",
+      entityType: entityType || "switch",
+      ip,
+      port,
+      playerId,
+      playerToken,
+    };
+  }
+
+  return null;
+}
+
+async function upsertDeviceFromPairing(userId: string, pairing: PairingDevicePayload) {
+  await ensureAppUser(userId);
+
+  // Find the server this device belongs to
+  let server = await prisma.server.findFirst({
+    where: {
+      userId,
+      rustPlusIp: pairing.ip,
+      rustPlusPort: pairing.port ? Number(pairing.port) : undefined,
+    },
+  });
+
+  // If we can't find it by IP/Port, and it's missing, we might have a problem.
+  // But usually device notifications have the server details.
+  if (!server) {
+    // Fallback: use the most recently active server? 
+    // Or just fail.
+    throw new Error(`Could not find server for device ${pairing.name} (${pairing.ip}:${pairing.port})`);
+  }
+
+  await prisma.smartDevice.upsert({
+    where: { userId_id: { userId, id: pairing.id } },
+    create: {
+      userId,
+      id: pairing.id,
+      serverId: server.id,
+      name: pairing.name,
+      type: pairing.entityType,
+    },
+    update: {
+      name: pairing.name,
+      type: pairing.entityType,
+      serverId: server.id,
+    },
+  });
 }
 
 async function upsertServerFromPairing(userId: string, pairing: PairingServerPayload) {
@@ -582,7 +657,7 @@ export async function startPairingListenerFromFcmCredentials(
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
-          const msg = JSON.parse(line) as { type: string; level?: string; message?: string; pairing?: PairingServerPayload; reason?: string };
+          const msg = JSON.parse(line) as { type: string; level?: string; message?: string; pairing?: PairingPayload; reason?: string };
 
           if (msg.type === "log" && msg.message) {
             addLog(userId, (msg.level as LogEntry["level"]) || "info", msg.message);
@@ -591,16 +666,29 @@ export async function startPairingListenerFromFcmCredentials(
             setState(userId, { status: "listening", message: "Listening for Rust+ pairing notification..." });
           } else if (msg.type === "pairing" && msg.pairing) {
             const pairing = msg.pairing;
-            addLog(userId, "info", `Pairing found for ${pairing.ip}:${pairing.port}. Mapping to BattleMetrics...`);
-            upsertServerFromPairing(userId, pairing)
-              .then(() => {
-                setState(userId, {
-                  lastPairing: pairing,
-                  status: "completed",
-                  message: `Paired server ${pairing.name || pairing.id} and saved credentials.`,
-                });
-              })
-              .catch((err: Error) => addLog(userId, "error", err.message || "Failed to save pairing"));
+            if (pairing.type === "server") {
+              addLog(userId, "info", `Server pairing found for ${pairing.ip}:${pairing.port}. Mapping to BattleMetrics...`);
+              upsertServerFromPairing(userId, pairing)
+                .then(() => {
+                  setState(userId, {
+                    lastPairing: pairing,
+                    status: "completed",
+                    message: `Paired server ${pairing.name || pairing.id} and saved credentials.`,
+                  });
+                })
+                .catch((err: Error) => addLog(userId, "error", err.message || "Failed to save server pairing"));
+            } else if (pairing.type === "device") {
+              addLog(userId, "info", `Device pairing found: ${pairing.name} (${pairing.entityType})`);
+              upsertDeviceFromPairing(userId, pairing)
+                .then(() => {
+                  setState(userId, {
+                    lastPairing: pairing,
+                    status: "listening", // stay listening for more devices
+                    message: `Paired device ${pairing.name}. Still listening for more...`,
+                  });
+                })
+                .catch((err: Error) => addLog(userId, "error", err.message || "Failed to save device pairing"));
+            }
           } else if (msg.type === "stopped") {
             setState(userId, { status: "expired", message: "Pairing window expired." });
           } else if (msg.type === "error" && msg.message) {
