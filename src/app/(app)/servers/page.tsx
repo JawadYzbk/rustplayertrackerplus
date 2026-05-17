@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import axios from "axios";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -10,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -870,9 +872,12 @@ export default function ServersPage() {
                     </div>
                     <div className="flex gap-2 pt-2 border-t">
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => openRustPlusConfig(server)}>Rust+</Button>
-                      <Button variant="outline" size="sm" className="flex-1" asChild>
-                        <Link href={`/servers/${server.id}`}>Devices</Link>
-                      </Button>
+                      <Link 
+                        href={`/servers/${server.id}`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1")}
+                      >
+                        Devices
+                      </Link>
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewLive(server)}>Live</Button>
                     </div>
                   </div>
