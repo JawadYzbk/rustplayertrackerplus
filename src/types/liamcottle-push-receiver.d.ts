@@ -31,8 +31,8 @@ declare module "@liamcottle/rustplus.js" {
       useFacepunchProxy?: boolean
     );
     on(
-      event: "connected" | "disconnected" | "error",
-      listener: (error?: unknown) => void
+      event: "connected" | "disconnected" | "error" | "message" | "connecting" | "request",
+      listener: (data?: any) => void
     ): void;
     connect(): void;
     disconnect(): void;

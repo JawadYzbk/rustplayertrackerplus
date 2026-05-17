@@ -57,7 +57,7 @@ interface RustPlusCredentials {
 }
 
 interface RustPlusClient {
-  on(event: "connected" | "disconnected" | "error", listener: (err?: unknown) => void): void;
+  on(event: "connected" | "disconnected" | "error" | "message" | "connecting" | "request", listener: (err?: any) => void): void;
   connect(): void;
   disconnect(): void;
   sendTeamMessage(message: string): void;
