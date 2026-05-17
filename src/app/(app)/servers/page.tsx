@@ -870,7 +870,10 @@ export default function ServersPage() {
                     </div>
                     <div className="flex gap-2 pt-2 border-t">
                       <Button variant="outline" size="sm" className="flex-1" onClick={() => openRustPlusConfig(server)}>Rust+</Button>
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewLive(server)}>Live Players</Button>
+                      <Button variant="outline" size="sm" className="flex-1" asChild>
+                        <Link href={`/servers/${server.id}`}>Devices</Link>
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewLive(server)}>Live</Button>
                     </div>
                   </div>
                 ))}

@@ -121,32 +121,39 @@ process.stdin.on('end', async () => {
     }, listenMs);
 
     client.on('ON_DATA_RECEIVED', (data) => {
-      send({ type: 'log', level: 'info', message: 'Push notification received.' });
-      
       const pairing = extractPairing(data);
       if (pairing) {
+        send({ type: 'log', level: 'success', message: 'Pairing notification recognized!' });
         send({ type: 'pairing', pairing });
-        // Don't exit immediately if it's a device pairing, maybe they want to pair more?
-        // But for server pairing we usually want to finish.
         if (pairing.type === 'server') {
           clearTimeout(timer);
           try { client.destroy(); } catch {}
           process.exit(0);
+        }
+      } else {
+        const appData = data && (data.appData || data.app_data);
+        if (appData) {
+          const map = appDataToMap(appData);
+          const channel = map['channelId'];
+          send({ type: 'log', level: 'info', message: 'Notification received on channel: ' + (channel || 'unknown') });
+        } else {
+          send({ type: 'log', level: 'info', message: 'Push notification received (empty appData).' });
         }
       }
     });
 
     client.on('ON_NOTIFICATION_RECEIVED', (data) => {
-      send({ type: 'log', level: 'info', message: 'Encrypted push notification received.' });
-      
       const pairing = extractPairing(data.notification) || extractPairing(data.object) || extractPairing(data);
       if (pairing) {
+        send({ type: 'log', level: 'success', message: 'Encrypted pairing notification recognized!' });
         send({ type: 'pairing', pairing });
         if (pairing.type === 'server') {
           clearTimeout(timer);
           try { client.destroy(); } catch {}
           process.exit(0);
         }
+      } else {
+        send({ type: 'log', level: 'info', message: 'Encrypted push notification received but not recognized as pairing.' });
       }
     });
 
@@ -305,19 +312,26 @@ function extractPairing(data: unknown): PairingPayload | null {
   const map = appDataToMap(rawAppData);
 
   // The pairing notification has channelId 'pairing' or 'server'
-  if (map["channelId"] !== "pairing" && map["channelId"] !== "server") return null;
+  if (map["channelId"] !== "pairing" && map["channelId"] !== "server") {
+    console.log(`[extractPairing] Unrecognized channelId: ${map["channelId"]}`);
+    return null;
+  }
 
   let body: Record<string, unknown>;
   try {
     body = JSON.parse(map["body"] ?? "{}");
   } catch {
+    console.error("[extractPairing] Failed to parse body JSON");
     return null;
   }
 
   // Handle server pairing
   if (body.type === "server") {
     const { ip, port, playerId, playerToken } = body as Record<string, string>;
-    if (!ip || !port || !playerId || !playerToken) return null;
+    if (!ip || !port || !playerId || !playerToken) {
+      console.warn("[extractPairing] Missing server pairing fields:", body);
+      return null;
+    }
 
     return {
       type: "server",
@@ -345,6 +359,7 @@ function extractPairing(data: unknown): PairingPayload | null {
     };
   }
 
+  console.log(`[extractPairing] Unrecognized body type: ${body.type}`);
   return null;
 }
 

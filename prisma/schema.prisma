@@ -55,6 +55,7 @@ model SmartDevice {
   id        String   // Entity ID from Rust+
   serverId  String
   name      String
+  customCommand String? // Custom text to trigger this device
   type      String   // 'switch', 'alarm', etc.
   createdAt DateTime @default(now())
   isActive  Boolean  @default(true)

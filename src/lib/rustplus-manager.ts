@@ -176,16 +176,24 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
   if (command === "on" || command === "off") {
     const deviceName = args.join(" ").toLowerCase();
     if (!deviceName) {
-      entry.client.sendTeamMessage(`[Tracker] Usage: ${COMMAND_PREFIX}${command} <device name>`);
+      entry.client.sendTeamMessage(`[Tracker] Usage: ${COMMAND_PREFIX}${command} <device name or custom command>`);
       return;
     }
 
     const device = await prisma.smartDevice.findFirst({
-      where: { userId, serverId: server.id, name: { contains: deviceName, mode: "insensitive" } },
+      where: { 
+        userId, 
+        serverId: server.id, 
+        isActive: true,
+        OR: [
+          { customCommand: { equals: deviceName, mode: "insensitive" } },
+          { name: { contains: deviceName, mode: "insensitive" } },
+        ],
+      },
     });
 
     if (!device) {
-      entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" not found.`);
+      entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" not found or disabled.`);
       return;
     }
 
@@ -193,15 +201,19 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
       if (res.error) {
         entry.client.sendTeamMessage(`[Tracker] Error: ${res.error.error}`);
       } else {
-        entry.client.sendTeamMessage(`[Tracker] Turned ${command} ${device.name}.`);
+        const displayName = device.customCommand || device.name;
+        entry.client.sendTeamMessage(`[Tracker] Turned ${command} ${displayName}.`);
       }
     });
   } else if (command === "devices") {
     const devices = await prisma.smartDevice.findMany({
-      where: { userId, serverId: server.id },
-      select: { name: true, type: true },
+      where: { userId, serverId: server.id, isActive: true },
+      select: { name: true, customCommand: true, type: true },
     });
-    const list = devices.map(d => `${d.name} (${d.type})`).join(", ");
-    entry.client.sendTeamMessage(devices.length ? `[Tracker] Devices: ${list}` : "[Tracker] No devices paired.");
+    const list = devices.map(d => {
+      const cmd = d.customCommand ? ` (!${d.customCommand})` : "";
+      return `${d.name}${cmd}`;
+    }).join(", ");
+    entry.client.sendTeamMessage(devices.length ? `[Tracker] Active Devices: ${list}` : "[Tracker] No active devices paired.");
   }
 }
