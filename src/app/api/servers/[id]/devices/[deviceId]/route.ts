@@ -14,7 +14,7 @@ const UpdateDeviceSchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ serverId: string; id: string }> }
+  { params }: { params: Promise<{ id: string; deviceId: string }> }
 ) {
   let userId: string;
   try {
@@ -23,7 +23,7 @@ export async function PATCH(
     return unauthorizedJsonResponse();
   }
 
-  const { id } = await params;
+  const { deviceId: id } = await params;
   const parsed = UpdateDeviceSchema.safeParse(await req.json());
   if (!parsed.success) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -43,7 +43,7 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ serverId: string; id: string }> }
+  { params }: { params: Promise<{ id: string; deviceId: string }> }
 ) {
   let userId: string;
   try {
@@ -52,7 +52,7 @@ export async function DELETE(
     return unauthorizedJsonResponse();
   }
 
-  const { id } = await params;
+  const { deviceId: id } = await params;
   try {
     await prisma.smartDevice.delete({
       where: { userId_id: { userId, id } },

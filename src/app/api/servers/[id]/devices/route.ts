@@ -6,7 +6,7 @@ import {
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ serverId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let userId: string;
   try {
@@ -15,7 +15,7 @@ export async function GET(
     return unauthorizedJsonResponse();
   }
 
-  const { serverId } = await params;
+  const { id: serverId } = await params;
 
   const devices = await prisma.smartDevice.findMany({
     where: { userId, serverId },
