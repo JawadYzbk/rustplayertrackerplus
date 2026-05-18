@@ -30,7 +30,7 @@ export async function GET(
         const state = await getDeviceState(userId, serverId, device.id);
         return {
           ...device,
-          value: state?.value ?? false,
+          value: state?.payload?.value ?? false,
           capacity: state?.payload?.capacity,
           amount: state?.payload?.amount,
         };

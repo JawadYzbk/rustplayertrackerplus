@@ -160,10 +160,21 @@ export async function setDeviceState(userId: string, serverId: string, deviceId:
   });
 }
 
+interface AppEntityInfo {
+  type: number;
+  payload: {
+    value?: boolean;
+    capacity?: number;
+    amount?: number;
+    hasProtection?: boolean;
+    protectionExpiry?: number;
+  };
+}
+
 /**
  * Get current info/state for a smart device.
  */
-export async function getDeviceState(userId: string, serverId: string, deviceId: string) {
+export async function getDeviceState(userId: string, serverId: string, deviceId: string): Promise<AppEntityInfo | null> {
   const server = await prisma.server.findUnique({
     where: { userId_id: { userId, id: serverId } },
   });
