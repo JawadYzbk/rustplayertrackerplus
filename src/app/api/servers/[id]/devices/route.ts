@@ -3,6 +3,7 @@ import {
   requireCurrentUserId,
   unauthorizedJsonResponse,
 } from "@/lib/current-user";
+import { getDeviceState } from "@/lib/rustplus-manager";
 
 export async function GET(
   _req: Request,
@@ -22,5 +23,22 @@ export async function GET(
     orderBy: { createdAt: "desc" },
   });
 
-  return Response.json(devices);
+  // Enrich with live state if possible
+  const enrichedDevices = await Promise.all(
+    devices.map(async (device) => {
+      try {
+        const state = await getDeviceState(userId, serverId, device.id);
+        return {
+          ...device,
+          value: state?.value ?? false,
+          capacity: state?.payload?.capacity,
+          amount: state?.payload?.amount,
+        };
+      } catch (err) {
+        return { ...device, value: false };
+      }
+    })
+  );
+
+  return Response.json(enrichedDevices);
 }

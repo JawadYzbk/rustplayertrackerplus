@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 // @ts-ignore
-import RustPlus from "@liamcottle/rustplus.js";
+const RustPlus = require("@liamcottle/rustplus.js");
 
 interface ConnectionEntry {
   key: string;             // hash of ip:port:playerId:playerToken
@@ -146,12 +146,60 @@ export async function setDeviceState(userId: string, serverId: string, deviceId:
 
   entry.lastUsed = Date.now();
 
+  const numericId = parseInt(deviceId, 10);
+  const idToUse = isNaN(numericId) ? deviceId : numericId;
+
   return new Promise((resolve, reject) => {
-    entry.client.setEntityValue(deviceId, state, (res: any) => {
+    entry.client.setEntityValue(idToUse, state, (res: any) => {
       if (res.error) {
         reject(new Error(res.error.error || "Failed to set device state"));
       } else {
         resolve(res);
+      }
+    });
+  });
+}
+
+/**
+ * Get current info/state for a smart device.
+ */
+export async function getDeviceState(userId: string, serverId: string, deviceId: string) {
+  const server = await prisma.server.findUnique({
+    where: { userId_id: { userId, id: serverId } },
+  });
+
+  if (!server || !server.rustPlusIp || !server.rustPlusPort || !server.rustPlusPlayerId || !server.rustPlusPlayerToken) {
+    throw new Error("Server or Rust+ credentials not found");
+  }
+
+  const credKey = `${server.rustPlusIp}:${server.rustPlusPort}:${server.rustPlusPlayerId}:${server.rustPlusPlayerToken}`;
+  const serverKey = `${server.rustPlusIp}:${server.rustPlusPort}`;
+
+  let entry = connectionPool.get(credKey);
+  if (!entry) {
+    entry = await createConnection(credKey, serverKey, {
+      ip: server.rustPlusIp,
+      port: server.rustPlusPort,
+      playerId: server.rustPlusPlayerId,
+      playerToken: server.rustPlusPlayerToken,
+    });
+    // Wait a bit for connection
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+
+  entry.lastUsed = Date.now();
+  
+  const numericId = parseInt(deviceId, 10);
+  const idToUse = isNaN(numericId) ? deviceId : numericId;
+
+  return new Promise((resolve, reject) => {
+    entry.client.getEntityInfo(idToUse, (res: any) => {
+      if (res.error) {
+        reject(new Error(res.error.error || "Failed to get device state"));
+      } else if (res.response?.entityInfo) {
+        resolve(res.response.entityInfo);
+      } else {
+        resolve(null);
       }
     });
   });

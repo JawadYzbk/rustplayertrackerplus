@@ -28,6 +28,9 @@ interface SmartDevice {
   customCommand: string | null;
   type: string;
   isActive: boolean;
+  value: boolean;
+  amount?: number;
+  capacity?: number;
   createdAt: string;
 }
 
@@ -75,6 +78,7 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
     setControllingId(id);
     try {
       await axios.post(`/api/servers/${serverId}/devices/${id}`, { state });
+      setDevices(prev => prev.map(d => d.id === id ? { ...d, value: state } : d));
       toast.success(`Device turned ${state ? "on" : "off"}`);
     } catch (error) {
       toast.error(axios.isAxiosError(error) ? error.response?.data?.error || "Failed to control device" : "Failed to control device");
@@ -223,6 +227,16 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                               {device.type}
                             </Badge>
                             <span className="text-[10px] text-muted-foreground font-mono">ID: {device.id}</span>
+                            <Badge 
+                              className={`text-[9px] font-bold h-4 px-1 ${device.value ? 'bg-green-500 hover:bg-green-600' : 'bg-zinc-500 hover:bg-zinc-600'}`}
+                            >
+                              {device.value ? 'ON' : 'OFF'}
+                            </Badge>
+                            {device.amount !== undefined && (
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                                {device.amount} / {device.capacity ?? '?'}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1">

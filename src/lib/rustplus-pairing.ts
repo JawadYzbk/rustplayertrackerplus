@@ -388,17 +388,46 @@ async function upsertDeviceFromPairing(userId: string, pairing: PairingDevicePay
     throw new Error(`Could not find server for device ${pairing.name} (${pairing.ip}:${pairing.port})`);
   }
 
+  const existingDevice = await prisma.smartDevice.findUnique({
+    where: { userId_id: { userId, id: pairing.id } },
+  });
+
+  let nameToUse = pairing.name;
+
+  // If it's a new device or currently has a generic name, use incremental naming
+  if (!existingDevice || existingDevice.name === "Smart Device") {
+    const typeMap: Record<string, string> = {
+      "1": "switch",
+      "2": "smartalarm",
+      "3": "storagemonitor",
+      "switch": "switch",
+      "alarm": "smartalarm",
+      "storagemonitor": "storagemonitor"
+    };
+    
+    // Normalize type
+    const normalizedType = pairing.entityType.toLowerCase();
+    const baseName = typeMap[normalizedType] || typeMap[pairing.entityType] || "device";
+    
+    // Count existing devices of this type for this server to increment
+    const count = await prisma.smartDevice.count({
+      where: { userId, serverId: server.id, type: pairing.entityType }
+    });
+    
+    nameToUse = `${baseName}${count + 1}`;
+  }
+
   await prisma.smartDevice.upsert({
     where: { userId_id: { userId, id: pairing.id } },
     create: {
       userId,
       id: pairing.id,
       serverId: server.id,
-      name: pairing.name,
+      name: nameToUse,
       type: pairing.entityType,
     },
     update: {
-      name: pairing.name,
+      // Only update type and serverId, keep existing name if user changed it
       type: pairing.entityType,
       serverId: server.id,
     },
