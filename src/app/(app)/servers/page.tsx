@@ -803,6 +803,12 @@ export default function ServersPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
+                          <Link
+                            href={`/servers/${server.id}`}
+                            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mr-2")}
+                          >
+                            Devices
+                          </Link>
                           <Button
                             variant="outline"
                             size="sm"

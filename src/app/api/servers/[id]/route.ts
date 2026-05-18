@@ -5,6 +5,7 @@ import {
 } from "@/lib/current-user";
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { touchConnection } from "@/lib/rustplus-manager";
 
 const UpdateServerRustPlusSchema = z.object({
   rustPlusIp: z.string().trim().min(1).nullable().optional(),
@@ -12,6 +13,35 @@ const UpdateServerRustPlusSchema = z.object({
   rustPlusPlayerId: z.string().trim().min(1).nullable().optional(),
   rustPlusPlayerToken: z.string().trim().min(1).nullable().optional(),
 });
+
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
+  const { id } = await params;
+
+  const server = await prisma.server.findUnique({
+    where: { userId_id: { userId, id } },
+  });
+
+  if (!server) {
+    return Response.json({ error: "Server not found" }, { status: 404 });
+  }
+
+  // Ensure connection is active if we have credentials
+  if (server.rustPlusIp) {
+    void touchConnection(userId, server.id);
+  }
+
+  return Response.json(server);
+}
 
 export async function DELETE(
   _req: Request,
