@@ -60,15 +60,19 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
   async function fetchData() {
     setLoading(true);
     try {
-      const [serverRes, devicesRes] = await Promise.all([
-        axios.get<Server>(`/api/servers/${serverId}`),
-        axios.get<SmartDevice[]>(`/api/servers/${serverId}/devices`)
-      ]);
+      const serverRes = await axios.get<Server>(`/api/servers/${serverId}`);
       setServer(serverRes.data);
+    } catch {
+      toast.error("Server not found");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const devicesRes = await axios.get<SmartDevice[]>(`/api/servers/${serverId}/devices`);
       setDevices(devicesRes.data);
-    } catch (error) {
-      console.error("Failed to fetch server data:", error);
-      toast.error("Failed to load server details");
+    } catch {
+      toast.error("Failed to load devices");
     } finally {
       setLoading(false);
     }

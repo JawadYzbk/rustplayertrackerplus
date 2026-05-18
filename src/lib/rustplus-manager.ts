@@ -116,6 +116,17 @@ async function createConnection(credKey: string, serverKey: string, creds: any) 
   return entry;
 }
 
+async function waitForConnection(entry: ConnectionEntry, timeoutMs = 10000): Promise<void> {
+  if (entry.isConnected) return;
+  const deadline = Date.now() + timeoutMs;
+  while (!entry.isConnected && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  if (!entry.isConnected) {
+    throw new Error("Rust+ connection timeout");
+  }
+}
+
 /**
  * Directly control a smart device state.
  */
@@ -139,10 +150,9 @@ export async function setDeviceState(userId: string, serverId: string, deviceId:
       playerId: server.rustPlusPlayerId,
       playerToken: server.rustPlusPlayerToken,
     });
-    // Wait a bit for connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
   }
 
+  await waitForConnection(entry);
   entry.lastUsed = Date.now();
 
   const numericId = parseInt(deviceId, 10);
@@ -193,10 +203,9 @@ export async function getDeviceState(userId: string, serverId: string, deviceId:
       playerId: server.rustPlusPlayerId,
       playerToken: server.rustPlusPlayerToken,
     });
-    // Wait a bit for connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
   }
 
+  await waitForConnection(entry);
   entry.lastUsed = Date.now();
   
   const numericId = parseInt(deviceId, 10);
@@ -268,7 +277,9 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
   if (command === "on" || command === "off") {
     const deviceName = args.join(" ").toLowerCase();
     if (!deviceName) {
-      entry.client.sendTeamMessage(`[Tracker] Usage: ${COMMAND_PREFIX}${command} <device name or custom command>`);
+      if (entry.isConnected) {
+        entry.client.sendTeamMessage(`[Tracker] Usage: ${COMMAND_PREFIX}${command} <device name or custom command>`);
+      }
       return;
     }
 
@@ -285,11 +296,17 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
     });
 
     if (!device) {
-      entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" not found or disabled.`);
+      if (entry.isConnected) {
+        entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" not found or disabled.`);
+      }
       return;
     }
 
-    entry.client.setEntityValue(device.id, command === "on", (res: any) => {
+    const numericId = parseInt(device.id, 10);
+    const entityId = isNaN(numericId) ? device.id : numericId;
+
+    entry.client.setEntityValue(entityId, command === "on", (res: any) => {
+      if (!entry.isConnected) return;
       if (res.error) {
         entry.client.sendTeamMessage(`[Tracker] Error: ${res.error.error}`);
       } else {
@@ -302,6 +319,7 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
       where: { userId, serverId: server.id, isActive: true },
       select: { name: true, customCommand: true, type: true },
     });
+    if (!entry.isConnected) return;
     const list = devices.map(d => {
       const cmd = d.customCommand ? ` (!${d.customCommand})` : "";
       return `${d.name}${cmd}`;
