@@ -16,6 +16,7 @@ const serverSharedData = new Map<string, any>(); // Cache for map/markers per se
 
 const COMMAND_PREFIX = "!";
 const IDLE_TIMEOUT_MS = 10 * 60_000; // 10 minutes
+const ENTITY_CALL_TIMEOUT_MS = 5_000;
 
 export async function startRustPlusManager() {
   console.log("[RustPlusManager] Starting optimizer...");
@@ -158,15 +159,20 @@ export async function setDeviceState(userId: string, serverId: string, deviceId:
   const numericId = parseInt(deviceId, 10);
   const idToUse = isNaN(numericId) ? deviceId : numericId;
 
-  return new Promise((resolve, reject) => {
-    entry.client.setEntityValue(idToUse, state, (res: any) => {
-      if (res.error) {
-        reject(new Error(res.error.error || "Failed to set device state"));
-      } else {
-        resolve(res);
-      }
-    });
-  });
+  return Promise.race([
+    new Promise((resolve, reject) => {
+      entry.client.setEntityValue(idToUse, state, (res: any) => {
+        if (res.error) {
+          reject(new Error(res.error.error || "Failed to set device state"));
+        } else {
+          resolve(res);
+        }
+      });
+    }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Device control timeout")), ENTITY_CALL_TIMEOUT_MS)
+    ),
+  ]);
 }
 
 interface AppEntityInfo {
@@ -211,17 +217,22 @@ export async function getDeviceState(userId: string, serverId: string, deviceId:
   const numericId = parseInt(deviceId, 10);
   const idToUse = isNaN(numericId) ? deviceId : numericId;
 
-  return new Promise((resolve, reject) => {
-    entry.client.getEntityInfo(idToUse, (res: any) => {
-      if (res.error) {
-        reject(new Error(res.error.error || "Failed to get device state"));
-      } else if (res.response?.entityInfo) {
-        resolve(res.response.entityInfo);
-      } else {
-        resolve(null);
-      }
-    });
-  });
+  return Promise.race([
+    new Promise<AppEntityInfo | null>((resolve, reject) => {
+      entry.client.getEntityInfo(idToUse, (res: any) => {
+        if (res.error) {
+          reject(new Error(res.error.error || "Failed to get device state"));
+        } else if (res.response?.entityInfo) {
+          resolve(res.response.entityInfo);
+        } else {
+          resolve(null);
+        }
+      });
+    }),
+    new Promise<null>((_, reject) =>
+      setTimeout(() => reject(new Error("Device state timeout")), ENTITY_CALL_TIMEOUT_MS)
+    ),
+  ]);
 }
 
 async function startSharedDataPolling(entry: ConnectionEntry) {

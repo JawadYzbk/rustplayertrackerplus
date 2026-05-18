@@ -5,17 +5,6 @@ import {
 } from "@/lib/current-user";
 import { touchConnection, getDeviceState } from "@/lib/rustplus-manager";
 
-const DEVICE_STATE_TIMEOUT_MS = 8_000;
-
-async function getDeviceStateWithTimeout(userId: string, serverId: string, deviceId: string) {
-  return Promise.race([
-    getDeviceState(userId, serverId, deviceId),
-    new Promise<null>((_, reject) =>
-      setTimeout(() => reject(new Error("Device state timeout")), DEVICE_STATE_TIMEOUT_MS)
-    ),
-  ]);
-}
-
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -45,7 +34,7 @@ export async function GET(
   const enrichedDevices = await Promise.allSettled(
     devices.map(async (device) => {
       try {
-        const state = await getDeviceStateWithTimeout(userId, serverId, device.id);
+        const state = await getDeviceState(userId, serverId, device.id);
         return {
           ...device,
           value: state?.payload?.value ?? false,
