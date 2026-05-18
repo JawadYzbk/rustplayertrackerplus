@@ -7,6 +7,7 @@
 import axios from "axios";
 import { prisma } from "./prisma";
 import { splitSessionAcrossDays, splitSessionAcrossHours } from "./analytics";
+import RustPlus from "./rustplus-ts-client";
 
 const POLL_INTERVAL_MS = 60_000;
 const RUST_PLUS_SEND_TIMEOUT_MS = 8_000;
@@ -97,15 +98,7 @@ async function sendRustPlusTeamMessage(
   credentials: RustPlusCredentials,
   message: string
 ): Promise<void> {
-  const rustPlusModule = (await import("@liamcottle/rustplus.js")) as {
-    default: new (
-      ip: string,
-      port: string,
-      playerId: string,
-      playerToken: string
-    ) => RustPlusClient;
-  };
-  const RustPlus = rustPlusModule.default;
+
 
   await new Promise<void>((resolve, reject) => {
     const rustPlus = new RustPlus(

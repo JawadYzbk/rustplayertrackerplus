@@ -22,7 +22,19 @@ declare module "@liamcottle/push-receiver/src/client" {
 }
 
 declare module "@liamcottle/rustplus.js" {
-  export default class RustPlus {
+  import { EventEmitter } from "events";
+  export default class RustPlus extends EventEmitter {
+    server: string;
+    port: string;
+    playerId: string;
+    playerToken: string;
+    useFacepunchProxy: boolean;
+    websocket: any;
+    AppRequest: any;
+    AppMessage: any;
+    seqCallbacks: any[];
+    seq: number;
+
     constructor(
       server: string,
       port: string,
@@ -30,12 +42,10 @@ declare module "@liamcottle/rustplus.js" {
       playerToken: string,
       useFacepunchProxy?: boolean
     );
-    on(
-      event: "connected" | "disconnected" | "error" | "message" | "connecting" | "request",
-      listener: (data?: any) => void
-    ): void;
     connect(): void;
     disconnect(): void;
     sendTeamMessage(message: string): void;
   }
 }
+
+declare module "ws";

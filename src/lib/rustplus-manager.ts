@@ -1,6 +1,5 @@
 import { prisma } from "./prisma";
-// @ts-ignore
-const RustPlus = require("@liamcottle/rustplus.js");
+import RustPlus from "./rustplus-ts-client";
 
 interface ConnectionEntry {
   key: string;             // hash of ip:port:playerId:playerToken
