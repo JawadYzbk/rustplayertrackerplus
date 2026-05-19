@@ -12,6 +12,7 @@
 /graphify-out
 # testing
 /coverage
+.agents
 
 # next.js
 /.next/
