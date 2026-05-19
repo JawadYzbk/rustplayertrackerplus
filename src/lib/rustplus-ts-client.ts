@@ -56,7 +56,8 @@ export class RustPlusTS extends RustPlus {
     this.websocket.on("message", (data: any) => {
       try {
         // decode received message using compiled decoder
-        const message = this.AppMessage.decode(data);
+        // ensure data is a Uint8Array for better compatibility with protobufjs
+        const message = this.AppMessage.decode(new Uint8Array(data));
 
         // check if received message is a response and if we have a callback registered for it
         if (

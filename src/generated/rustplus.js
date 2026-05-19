@@ -1,7 +1,7 @@
 /*eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars, default-case, jsdoc/require-param*/
 "use strict";
 
-var $protobuf = require("protobufjs/minimal");
+import $protobuf from "protobufjs/minimal";
 
 // Common aliases
 const $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;
@@ -19426,4 +19426,4 @@ export const rustplus = $root.rustplus = (() => {
     return rustplus;
 })();
 
-module.exports = $root;
+export default $root;
