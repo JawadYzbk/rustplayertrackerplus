@@ -144,7 +144,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.Vector2();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -166,7 +166,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -425,7 +425,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.Vector3();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -453,7 +453,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -731,7 +731,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.Vector4();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -765,7 +765,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -1040,7 +1040,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.Half3();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -1068,7 +1068,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -1346,7 +1346,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.Color();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -1380,7 +1380,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -1644,7 +1644,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.Ray();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -1666,7 +1666,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -1943,7 +1943,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanActionResult();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -1977,7 +1977,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -2372,7 +2372,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanInfo();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -2466,7 +2466,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -3023,7 +3023,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanInfo.Role();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -3099,7 +3099,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -3470,7 +3470,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanInfo.Member();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -3516,7 +3516,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -3850,7 +3850,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanInfo.Invite();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -3878,7 +3878,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -4183,7 +4183,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanLog();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -4207,7 +4207,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -4526,7 +4526,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanLog.Entry();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -4572,7 +4572,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -4862,7 +4862,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanInvitations();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -4880,7 +4880,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -5141,7 +5141,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.ClanInvitations.Invitation();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -5169,7 +5169,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -5756,7 +5756,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppRequest();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -5910,7 +5910,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -6451,7 +6451,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppMessage();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -6473,7 +6473,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -6873,7 +6873,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppResponse();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -6973,7 +6973,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -7440,7 +7440,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppBroadcast();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -7486,7 +7486,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -7774,14 +7774,14 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppEmpty();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
                 }
                 reader.skipType(tag & 7, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -7995,7 +7995,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppSendMessage();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -8011,7 +8011,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -8239,7 +8239,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppSetEntityValue();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -8255,7 +8255,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -8483,7 +8483,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppPromoteToLeader();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -8499,7 +8499,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -8741,7 +8741,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppGetNexusAuth();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -8757,7 +8757,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -8975,14 +8975,14 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppSuccess();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
                 }
                 reader.skipType(tag & 7, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -9196,7 +9196,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppError();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -9212,7 +9212,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -9440,7 +9440,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppFlag();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -9456,7 +9456,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -9830,7 +9830,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppInfo();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -9930,7 +9930,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -10319,7 +10319,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTime();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -10359,7 +10359,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -10678,7 +10678,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppMap();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -10726,7 +10726,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -11042,7 +11042,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppMap.Monument();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -11070,7 +11070,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -11330,7 +11330,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppEntityInfo();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -11352,7 +11352,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -11667,7 +11667,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppEntityPayload();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -11709,7 +11709,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -12004,7 +12004,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppEntityPayload.Item();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -12032,7 +12032,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -12321,7 +12321,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTeamInfo();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -12361,7 +12361,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -12747,7 +12747,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTeamInfo.Member();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -12805,7 +12805,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -13131,7 +13131,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTeamInfo.Note();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -13159,7 +13159,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -13449,7 +13449,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTeamMessage();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -13489,7 +13489,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -13771,7 +13771,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTeamChat();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -13789,7 +13789,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -14164,7 +14164,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppMarker();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -14254,7 +14254,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -14757,7 +14757,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppMarker.SellOrder();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -14821,7 +14821,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
@@ -15126,7 +15126,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppMapMarkers();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -15144,7 +15144,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -15389,7 +15389,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppClanInfo();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -15405,7 +15405,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -15667,7 +15667,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppClanMessage();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -15701,7 +15701,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -15988,7 +15988,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppClanChat();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -16006,7 +16006,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -16260,7 +16260,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppNexusAuth();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -16282,7 +16282,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -16530,7 +16530,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppTeamChanged();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -16552,7 +16552,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -16810,7 +16810,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppNewTeamMessage();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -16826,7 +16826,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -17070,7 +17070,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppEntityChanged();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -17092,7 +17092,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -17337,7 +17337,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppClanChanged();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -17353,7 +17353,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -17595,7 +17595,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppNewClanMessage();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -17617,7 +17617,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -17875,7 +17875,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppCameraSubscribe();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -17891,7 +17891,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -18129,7 +18129,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppCameraInput();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -18151,7 +18151,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -18435,7 +18435,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppCameraInfo();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -18475,7 +18475,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -18783,7 +18783,7 @@ export const rustplus = $root.rustplus = (() => {
             let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppCameraRays();
             while (reader.pos < end) {
                 let start = reader.pos;
-                let tag = reader.tag();
+                let tag = reader.uint32();
                 if (tag === _end) {
                     _end = undefined;
                     break;
@@ -18825,7 +18825,7 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 reader.skipType(wireType, _depth, tag);
                 $util.makeProp(message, "$unknowns", false);
-                (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
             }
             if (_end !== undefined)
                 throw Error("missing end group");
@@ -19178,7 +19178,7 @@ export const rustplus = $root.rustplus = (() => {
                 let end = length === undefined ? reader.len : reader.pos + length, message = _target || new $root.rustplus.AppCameraRays.Entity();
                 while (reader.pos < end) {
                     let start = reader.pos;
-                    let tag = reader.tag();
+                    let tag = reader.uint32();
                     if (tag === _end) {
                         _end = undefined;
                         break;
@@ -19224,7 +19224,7 @@ export const rustplus = $root.rustplus = (() => {
                     }
                     reader.skipType(wireType, _depth, tag);
                     $util.makeProp(message, "$unknowns", false);
-                    (message.$unknowns || (message.$unknowns = [])).push(reader.raw(start, reader.pos));
+                    (message.$unknowns || (message.$unknowns = [])).push(reader.buf.slice(start, reader.pos));
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
