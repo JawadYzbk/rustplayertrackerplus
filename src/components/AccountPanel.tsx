@@ -62,7 +62,7 @@ export default function AccountPanel() {
   return (
     <div className="flex items-center gap-3">
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
+        <DialogTrigger>
           <Button variant="ghost" size="icon" className="h-9 w-9">
             <Settings className="h-5 w-5" />
           </Button>
@@ -104,7 +104,7 @@ export default function AccountPanel() {
               {loading ? (
                 <div className="h-10 w-full animate-pulse bg-muted rounded-md" />
               ) : (
-                <Select value={cmdPrefix} onValueChange={setCmdPrefix}>
+                <Select value={cmdPrefix} onValueChange={(val) => setCmdPrefix(val ?? "!")}>
                   <SelectTrigger className="font-mono">
                     <SelectValue placeholder="Select a trigger" />
                   </SelectTrigger>
