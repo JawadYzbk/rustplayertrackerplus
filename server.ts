@@ -15,21 +15,33 @@ import { startRustPlusManager } from "./src/lib/rustplus-manager";
 const port = parseInt(process.env.PORT ?? "3000", 10);
 const dev = process.env.NODE_ENV !== "production";
 
+console.log(`[Server] Starting in ${dev ? "development" : "production"} mode...`);
+console.log(`[Server] Targeting port ${port} on host 0.0.0.0`);
+
 const app = next({ dev, port });
 const handle = app.getRequestHandler();
 
-app.prepare().then(() => {
-  // ── Start background worker ────────────────────────────────────────────────
-  startWorker();
+// ── Start HTTP server immediately to satisfy health checks ──────────────────
+const server = createServer((req, res) => {
+  const parsedUrl = parse(req.url ?? "/", true);
+  void handle(req, res, parsedUrl);
+});
 
-  // ── Start Rust+ manager ────────────────────────────────────────────────────
-  void startRustPlusManager();
+server.listen(port, "0.0.0.0", () => {
+  console.log(`[Server] Listening on http://0.0.0.0:${port} (${dev ? "dev" : "prod"})`);
 
-  // ── Start HTTP server ──────────────────────────────────────────────────────
-  createServer((req, res) => {
-    const parsedUrl = parse(req.url ?? "/", true);
-    void handle(req, res, parsedUrl);
-  }).listen(port, "0.0.0.0", () => {
-    console.log(`[Server] Ready on http://0.0.0.0:${port} (${dev ? "dev" : "prod"})`);
+  // ── Prepare Next.js + Workers in background ────────────────────────────────
+  app.prepare().then(() => {
+    console.log("[Server] Next.js preparation complete.");
+    
+    // Start background worker
+    startWorker();
+
+    // Start Rust+ manager
+    void startRustPlusManager();
+    
+    console.log("[Server] All systems operational.");
+  }).catch((err) => {
+    console.error("[Server] Failed to prepare Next.js app:", err);
   });
 });

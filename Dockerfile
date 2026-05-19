@@ -47,4 +47,4 @@ ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
 # Push schema and start the custom server
-CMD sh -c "npx prisma db push && npx tsx server.ts"
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]
