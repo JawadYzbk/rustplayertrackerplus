@@ -434,6 +434,29 @@ export default function PlayersPage() {
             </SelectContent>
           </Select>
         </div>
+        <div>
+          <p className="text-muted-foreground text-[10px] uppercase font-semibold mb-1">Rust+ Alerts</p>
+          <Button
+            variant={player.rustPlusNotifications ? "secondary" : "outline"}
+            size="sm"
+            className="w-full text-xs h-8"
+            disabled={togglingNotifId === player.id}
+            onClick={() =>
+              handleToggleRustPlusNotifications(
+                player.id,
+                player.rustPlusNotifications
+              )
+            }
+          >
+            {togglingNotifId === player.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : player.rustPlusNotifications ? (
+              "Enabled"
+            ) : (
+              "Disabled"
+            )}
+          </Button>
+        </div>
       </div>
       
       <div className="flex gap-2 pt-2 border-t">
@@ -493,6 +516,27 @@ export default function PlayersPage() {
             ))}
           </SelectContent>
         </Select>
+      </TableCell>
+      <TableCell>
+        <Button
+          variant={player.rustPlusNotifications ? "secondary" : "outline"}
+          size="sm"
+          disabled={togglingNotifId === player.id}
+          onClick={() =>
+            handleToggleRustPlusNotifications(
+              player.id,
+              player.rustPlusNotifications
+            )
+          }
+        >
+          {togglingNotifId === player.id ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : player.rustPlusNotifications ? (
+            "Enabled"
+          ) : (
+            "Disabled"
+          )}
+        </Button>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
@@ -764,13 +808,14 @@ export default function PlayersPage() {
                       onToggle={toggleSort}
                     />
                     <TableHead>Group</TableHead>
+                    <TableHead>Rust+ Alerts</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {players.length === 0 && !loading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                         No players found.
                       </TableCell>
                     </TableRow>
@@ -787,7 +832,7 @@ export default function PlayersPage() {
                               className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
                               onClick={() => toggleGroupExpand(group.id)}
                             >
-                              <TableCell colSpan={7} className="py-2">
+                              <TableCell colSpan={8} className="py-2">
                                 <div className="flex items-center gap-2 font-medium">
                                   <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
@@ -808,7 +853,7 @@ export default function PlayersPage() {
                             className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
                             onClick={() => toggleGroupExpand("ungrouped")}
                           >
-                            <TableCell colSpan={7} className="py-2">
+                            <TableCell colSpan={8} className="py-2">
                               <div className="flex items-center gap-2 font-medium text-muted-foreground">
                                 <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
                                 Ungrouped
