@@ -73,13 +73,11 @@ function extractPairing(data) {
 
   // Handle smart device pairing
   if (body.type === 'device' || body.entityType) {
-    const { id, name, entityType, ip, port, playerId, playerToken } = body;
-    // Note: playerId/playerToken/ip/port might be missing if it's a sub-device notification
-    // But usually they are there or we can infer them if we know which server is active.
+    const { id, entityId, name, entityName, entityType, ip, port, playerId, playerToken } = body;
     return {
       type: 'device',
-      id: String(id || body.entityId),
-      name: name || body.entityName || 'Smart Device',
+      id: String(entityId || id),
+      name: name || entityName || 'Smart Device',
       entityType: entityType || 'switch',
       ip,
       port,
@@ -351,11 +349,13 @@ function extractPairing(data: unknown): PairingPayload | null {
 
   // Handle device pairing
   if (body.type === "device") {
-    const { id, name, entityType, ip, port, playerId, playerToken } = body as Record<string, string>;
+    const { id, entityId, name, entityName, entityType, ip, port, playerId, playerToken } = body as Record<string, string>;
+    // 'entityId' is the numeric Rust+ entity ID. 'id' is a notification UUID — prefer entityId.
+    const deviceId = String(entityId || id);
     return {
       type: "device",
-      id: String(id),
-      name: name || "Smart Device",
+      id: deviceId,
+      name: name || entityName || "Smart Device",
       entityType: entityType || "switch",
       ip,
       port,

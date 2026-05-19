@@ -14,6 +14,13 @@ interface ConnectionEntry {
 const connectionPool = new Map<string, ConnectionEntry>();
 const serverSharedData = new Map<string, any>(); // Cache for map/markers per serverKey
 
+function getNumericEntityId(deviceId: string): number {
+  if (/^\d+$/.test(deviceId)) {
+    return parseInt(deviceId, 10);
+  }
+  throw new Error(`Device ID "${deviceId}" is not a valid numeric entity ID. The device was paired before a bug fix — re-pair it from the Servers page.`);
+}
+
 const COMMAND_PREFIX = "!";
 const IDLE_TIMEOUT_MS = 10 * 60_000; // 10 minutes
 const ENTITY_CALL_TIMEOUT_MS = 5_000;
@@ -156,8 +163,7 @@ export async function setDeviceState(userId: string, serverId: string, deviceId:
   await waitForConnection(entry);
   entry.lastUsed = Date.now();
 
-  const numericId = parseInt(deviceId, 10);
-  const idToUse = isNaN(numericId) ? deviceId : numericId;
+  const idToUse = getNumericEntityId(deviceId);
 
   return Promise.race([
     new Promise((resolve, reject) => {
@@ -214,8 +220,7 @@ export async function getDeviceState(userId: string, serverId: string, deviceId:
   await waitForConnection(entry);
   entry.lastUsed = Date.now();
   
-  const numericId = parseInt(deviceId, 10);
-  const idToUse = isNaN(numericId) ? deviceId : numericId;
+  const idToUse = getNumericEntityId(deviceId);
 
   return Promise.race([
     new Promise<AppEntityInfo | null>((resolve, reject) => {
@@ -313,8 +318,15 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
       return;
     }
 
-    const numericId = parseInt(device.id, 10);
-    const entityId = isNaN(numericId) ? device.id : numericId;
+    let entityId: number;
+    try {
+      entityId = getNumericEntityId(device.id);
+    } catch {
+      if (entry.isConnected) {
+        entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" needs re-pairing.`);
+      }
+      return;
+    }
 
     entry.client.setEntityValue(entityId, command === "on", (res: any) => {
       if (!entry.isConnected) return;
