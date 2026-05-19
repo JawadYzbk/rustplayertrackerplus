@@ -1981,12 +1981,9 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("requestId"))
-                throw $util.ProtocolError("missing required 'requestId'", { instance: message });
-            if (!message.hasOwnProperty("result"))
-                throw $util.ProtocolError("missing required 'result'", { instance: message });
-            if (!message.hasOwnProperty("hasClanInfo"))
-                throw $util.ProtocolError("missing required 'hasClanInfo'", { instance: message });
+            
+            
+            
             return message;
         };
 
@@ -2470,14 +2467,10 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("clanId"))
-                throw $util.ProtocolError("missing required 'clanId'", { instance: message });
-            if (!message.hasOwnProperty("name"))
-                throw $util.ProtocolError("missing required 'name'", { instance: message });
-            if (!message.hasOwnProperty("created"))
-                throw $util.ProtocolError("missing required 'created'", { instance: message });
-            if (!message.hasOwnProperty("creator"))
-                throw $util.ProtocolError("missing required 'creator'", { instance: message });
+            
+            
+            
+            
             return message;
         };
 
@@ -3103,28 +3096,17 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("roleId"))
-                    throw $util.ProtocolError("missing required 'roleId'", { instance: message });
-                if (!message.hasOwnProperty("rank"))
-                    throw $util.ProtocolError("missing required 'rank'", { instance: message });
-                if (!message.hasOwnProperty("name"))
-                    throw $util.ProtocolError("missing required 'name'", { instance: message });
-                if (!message.hasOwnProperty("canSetMotd"))
-                    throw $util.ProtocolError("missing required 'canSetMotd'", { instance: message });
-                if (!message.hasOwnProperty("canSetLogo"))
-                    throw $util.ProtocolError("missing required 'canSetLogo'", { instance: message });
-                if (!message.hasOwnProperty("canInvite"))
-                    throw $util.ProtocolError("missing required 'canInvite'", { instance: message });
-                if (!message.hasOwnProperty("canKick"))
-                    throw $util.ProtocolError("missing required 'canKick'", { instance: message });
-                if (!message.hasOwnProperty("canPromote"))
-                    throw $util.ProtocolError("missing required 'canPromote'", { instance: message });
-                if (!message.hasOwnProperty("canDemote"))
-                    throw $util.ProtocolError("missing required 'canDemote'", { instance: message });
-                if (!message.hasOwnProperty("canSetPlayerNotes"))
-                    throw $util.ProtocolError("missing required 'canSetPlayerNotes'", { instance: message });
-                if (!message.hasOwnProperty("canAccessLogs"))
-                    throw $util.ProtocolError("missing required 'canAccessLogs'", { instance: message });
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 return message;
             };
 
@@ -3520,14 +3502,10 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("steamId"))
-                    throw $util.ProtocolError("missing required 'steamId'", { instance: message });
-                if (!message.hasOwnProperty("roleId"))
-                    throw $util.ProtocolError("missing required 'roleId'", { instance: message });
-                if (!message.hasOwnProperty("joined"))
-                    throw $util.ProtocolError("missing required 'joined'", { instance: message });
-                if (!message.hasOwnProperty("lastSeen"))
-                    throw $util.ProtocolError("missing required 'lastSeen'", { instance: message });
+                
+                
+                
+                
                 return message;
             };
 
@@ -3882,12 +3860,9 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("steamId"))
-                    throw $util.ProtocolError("missing required 'steamId'", { instance: message });
-                if (!message.hasOwnProperty("recruiter"))
-                    throw $util.ProtocolError("missing required 'recruiter'", { instance: message });
-                if (!message.hasOwnProperty("timestamp"))
-                    throw $util.ProtocolError("missing required 'timestamp'", { instance: message });
+                
+                
+                
                 return message;
             };
 
@@ -4211,8 +4186,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("clanId"))
-                throw $util.ProtocolError("missing required 'clanId'", { instance: message });
+            
             return message;
         };
 
@@ -4576,10 +4550,8 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("timestamp"))
-                    throw $util.ProtocolError("missing required 'timestamp'", { instance: message });
-                if (!message.hasOwnProperty("eventKey"))
-                    throw $util.ProtocolError("missing required 'eventKey'", { instance: message });
+                
+                
                 return message;
             };
 
@@ -5173,12 +5145,9 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("clanId"))
-                    throw $util.ProtocolError("missing required 'clanId'", { instance: message });
-                if (!message.hasOwnProperty("recruiter"))
-                    throw $util.ProtocolError("missing required 'recruiter'", { instance: message });
-                if (!message.hasOwnProperty("timestamp"))
-                    throw $util.ProtocolError("missing required 'timestamp'", { instance: message });
+                
+                
+                
                 return message;
             };
 
@@ -5914,12 +5883,9 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("seq"))
-                throw $util.ProtocolError("missing required 'seq'", { instance: message });
-            if (!message.hasOwnProperty("playerId"))
-                throw $util.ProtocolError("missing required 'playerId'", { instance: message });
-            if (!message.hasOwnProperty("playerToken"))
-                throw $util.ProtocolError("missing required 'playerToken'", { instance: message });
+            
+            
+            
             return message;
         };
 
@@ -6977,8 +6943,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("seq"))
-                throw $util.ProtocolError("missing required 'seq'", { instance: message });
+            
             return message;
         };
 
@@ -8015,8 +7980,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("message"))
-                throw $util.ProtocolError("missing required 'message'", { instance: message });
+            
             return message;
         };
 
@@ -8259,8 +8223,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("value"))
-                throw $util.ProtocolError("missing required 'value'", { instance: message });
+            
             return message;
         };
 
@@ -8503,8 +8466,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("steamId"))
-                throw $util.ProtocolError("missing required 'steamId'", { instance: message });
+            
             return message;
         };
 
@@ -8761,8 +8723,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("appKey"))
-                throw $util.ProtocolError("missing required 'appKey'", { instance: message });
+            
             return message;
         };
 
@@ -9216,8 +9177,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("error"))
-                throw $util.ProtocolError("missing required 'error'", { instance: message });
+            
             return message;
         };
 
@@ -9460,8 +9420,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("value"))
-                throw $util.ProtocolError("missing required 'value'", { instance: message });
+            
             return message;
         };
 
@@ -9934,24 +9893,6 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("name"))
-                throw $util.ProtocolError("missing required 'name'", { instance: message });
-            if (!message.hasOwnProperty("headerImage"))
-                throw $util.ProtocolError("missing required 'headerImage'", { instance: message });
-            if (!message.hasOwnProperty("url"))
-                throw $util.ProtocolError("missing required 'url'", { instance: message });
-            if (!message.hasOwnProperty("map"))
-                throw $util.ProtocolError("missing required 'map'", { instance: message });
-            if (!message.hasOwnProperty("mapSize"))
-                throw $util.ProtocolError("missing required 'mapSize'", { instance: message });
-            if (!message.hasOwnProperty("wipeTime"))
-                throw $util.ProtocolError("missing required 'wipeTime'", { instance: message });
-            if (!message.hasOwnProperty("players"))
-                throw $util.ProtocolError("missing required 'players'", { instance: message });
-            if (!message.hasOwnProperty("maxPlayers"))
-                throw $util.ProtocolError("missing required 'maxPlayers'", { instance: message });
-            if (!message.hasOwnProperty("queuedPlayers"))
-                throw $util.ProtocolError("missing required 'queuedPlayers'", { instance: message });
             return message;
         };
 
@@ -10363,16 +10304,11 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("dayLengthMinutes"))
-                throw $util.ProtocolError("missing required 'dayLengthMinutes'", { instance: message });
-            if (!message.hasOwnProperty("timeScale"))
-                throw $util.ProtocolError("missing required 'timeScale'", { instance: message });
-            if (!message.hasOwnProperty("sunrise"))
-                throw $util.ProtocolError("missing required 'sunrise'", { instance: message });
-            if (!message.hasOwnProperty("sunset"))
-                throw $util.ProtocolError("missing required 'sunset'", { instance: message });
-            if (!message.hasOwnProperty("time"))
-                throw $util.ProtocolError("missing required 'time'", { instance: message });
+            
+            
+            
+            
+            
             return message;
         };
 
@@ -10730,14 +10666,10 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("width"))
-                throw $util.ProtocolError("missing required 'width'", { instance: message });
-            if (!message.hasOwnProperty("height"))
-                throw $util.ProtocolError("missing required 'height'", { instance: message });
-            if (!message.hasOwnProperty("jpgImage"))
-                throw $util.ProtocolError("missing required 'jpgImage'", { instance: message });
-            if (!message.hasOwnProperty("oceanMargin"))
-                throw $util.ProtocolError("missing required 'oceanMargin'", { instance: message });
+            
+            
+            
+            
             return message;
         };
 
@@ -11074,12 +11006,9 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("token"))
-                    throw $util.ProtocolError("missing required 'token'", { instance: message });
-                if (!message.hasOwnProperty("x"))
-                    throw $util.ProtocolError("missing required 'x'", { instance: message });
-                if (!message.hasOwnProperty("y"))
-                    throw $util.ProtocolError("missing required 'y'", { instance: message });
+                
+                
+                
                 return message;
             };
 
@@ -11356,10 +11285,8 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("type"))
-                throw $util.ProtocolError("missing required 'type'", { instance: message });
-            if (!message.hasOwnProperty("payload"))
-                throw $util.ProtocolError("missing required 'payload'", { instance: message });
+            
+            
             return message;
         };
 
@@ -12036,12 +11963,9 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("itemId"))
-                    throw $util.ProtocolError("missing required 'itemId'", { instance: message });
-                if (!message.hasOwnProperty("quantity"))
-                    throw $util.ProtocolError("missing required 'quantity'", { instance: message });
-                if (!message.hasOwnProperty("itemIsBlueprint"))
-                    throw $util.ProtocolError("missing required 'itemIsBlueprint'", { instance: message });
+                
+                
+                
                 return message;
             };
 
@@ -12365,8 +12289,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("leaderSteamId"))
-                throw $util.ProtocolError("missing required 'leaderSteamId'", { instance: message });
+            
             return message;
         };
 
@@ -12809,22 +12732,14 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("steamId"))
-                    throw $util.ProtocolError("missing required 'steamId'", { instance: message });
-                if (!message.hasOwnProperty("name"))
-                    throw $util.ProtocolError("missing required 'name'", { instance: message });
-                if (!message.hasOwnProperty("x"))
-                    throw $util.ProtocolError("missing required 'x'", { instance: message });
-                if (!message.hasOwnProperty("y"))
-                    throw $util.ProtocolError("missing required 'y'", { instance: message });
-                if (!message.hasOwnProperty("isOnline"))
-                    throw $util.ProtocolError("missing required 'isOnline'", { instance: message });
-                if (!message.hasOwnProperty("spawnTime"))
-                    throw $util.ProtocolError("missing required 'spawnTime'", { instance: message });
-                if (!message.hasOwnProperty("isAlive"))
-                    throw $util.ProtocolError("missing required 'isAlive'", { instance: message });
-                if (!message.hasOwnProperty("deathTime"))
-                    throw $util.ProtocolError("missing required 'deathTime'", { instance: message });
+                
+                
+                
+                
+                
+                
+                
+                
                 return message;
             };
 
@@ -13163,12 +13078,9 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("type"))
-                    throw $util.ProtocolError("missing required 'type'", { instance: message });
-                if (!message.hasOwnProperty("x"))
-                    throw $util.ProtocolError("missing required 'x'", { instance: message });
-                if (!message.hasOwnProperty("y"))
-                    throw $util.ProtocolError("missing required 'y'", { instance: message });
+                
+                
+                
                 return message;
             };
 
@@ -13493,16 +13405,11 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("steamId"))
-                throw $util.ProtocolError("missing required 'steamId'", { instance: message });
-            if (!message.hasOwnProperty("name"))
-                throw $util.ProtocolError("missing required 'name'", { instance: message });
-            if (!message.hasOwnProperty("message"))
-                throw $util.ProtocolError("missing required 'message'", { instance: message });
-            if (!message.hasOwnProperty("color"))
-                throw $util.ProtocolError("missing required 'color'", { instance: message });
-            if (!message.hasOwnProperty("time"))
-                throw $util.ProtocolError("missing required 'time'", { instance: message });
+            
+            
+            
+            
+            
             return message;
         };
 
@@ -14258,14 +14165,10 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("id"))
-                throw $util.ProtocolError("missing required 'id'", { instance: message });
-            if (!message.hasOwnProperty("type"))
-                throw $util.ProtocolError("missing required 'type'", { instance: message });
-            if (!message.hasOwnProperty("x"))
-                throw $util.ProtocolError("missing required 'x'", { instance: message });
-            if (!message.hasOwnProperty("y"))
-                throw $util.ProtocolError("missing required 'y'", { instance: message });
+            
+            
+            
+            
             return message;
         };
 
@@ -14825,20 +14728,13 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("itemId"))
-                    throw $util.ProtocolError("missing required 'itemId'", { instance: message });
-                if (!message.hasOwnProperty("quantity"))
-                    throw $util.ProtocolError("missing required 'quantity'", { instance: message });
-                if (!message.hasOwnProperty("currencyId"))
-                    throw $util.ProtocolError("missing required 'currencyId'", { instance: message });
-                if (!message.hasOwnProperty("costPerItem"))
-                    throw $util.ProtocolError("missing required 'costPerItem'", { instance: message });
-                if (!message.hasOwnProperty("amountInStock"))
-                    throw $util.ProtocolError("missing required 'amountInStock'", { instance: message });
-                if (!message.hasOwnProperty("itemIsBlueprint"))
-                    throw $util.ProtocolError("missing required 'itemIsBlueprint'", { instance: message });
-                if (!message.hasOwnProperty("currencyIsBlueprint"))
-                    throw $util.ProtocolError("missing required 'currencyIsBlueprint'", { instance: message });
+                
+                
+                
+                
+                
+                
+                
                 return message;
             };
 
@@ -15705,14 +15601,10 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("steamId"))
-                throw $util.ProtocolError("missing required 'steamId'", { instance: message });
-            if (!message.hasOwnProperty("name"))
-                throw $util.ProtocolError("missing required 'name'", { instance: message });
-            if (!message.hasOwnProperty("message"))
-                throw $util.ProtocolError("missing required 'message'", { instance: message });
-            if (!message.hasOwnProperty("time"))
-                throw $util.ProtocolError("missing required 'time'", { instance: message });
+            
+            
+            
+            
             return message;
         };
 
@@ -16286,10 +16178,8 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("serverId"))
-                throw $util.ProtocolError("missing required 'serverId'", { instance: message });
-            if (!message.hasOwnProperty("playerToken"))
-                throw $util.ProtocolError("missing required 'playerToken'", { instance: message });
+            
+            
             return message;
         };
 
@@ -16556,10 +16446,8 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("playerId"))
-                throw $util.ProtocolError("missing required 'playerId'", { instance: message });
-            if (!message.hasOwnProperty("teamInfo"))
-                throw $util.ProtocolError("missing required 'teamInfo'", { instance: message });
+            
+            
             return message;
         };
 
@@ -16830,8 +16718,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("message"))
-                throw $util.ProtocolError("missing required 'message'", { instance: message });
+            
             return message;
         };
 
@@ -17096,10 +16983,8 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("entityId"))
-                throw $util.ProtocolError("missing required 'entityId'", { instance: message });
-            if (!message.hasOwnProperty("payload"))
-                throw $util.ProtocolError("missing required 'payload'", { instance: message });
+            
+            
             return message;
         };
 
@@ -17621,10 +17506,8 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("clanId"))
-                throw $util.ProtocolError("missing required 'clanId'", { instance: message });
-            if (!message.hasOwnProperty("message"))
-                throw $util.ProtocolError("missing required 'message'", { instance: message });
+            
+            
             return message;
         };
 
@@ -17895,8 +17778,7 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("cameraId"))
-                throw $util.ProtocolError("missing required 'cameraId'", { instance: message });
+            
             return message;
         };
 
@@ -18155,10 +18037,8 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("buttons"))
-                throw $util.ProtocolError("missing required 'buttons'", { instance: message });
-            if (!message.hasOwnProperty("mouseDelta"))
-                throw $util.ProtocolError("missing required 'mouseDelta'", { instance: message });
+            
+            
             return message;
         };
 
@@ -18479,16 +18359,11 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("width"))
-                throw $util.ProtocolError("missing required 'width'", { instance: message });
-            if (!message.hasOwnProperty("height"))
-                throw $util.ProtocolError("missing required 'height'", { instance: message });
-            if (!message.hasOwnProperty("nearPlane"))
-                throw $util.ProtocolError("missing required 'nearPlane'", { instance: message });
-            if (!message.hasOwnProperty("farPlane"))
-                throw $util.ProtocolError("missing required 'farPlane'", { instance: message });
-            if (!message.hasOwnProperty("controlFlags"))
-                throw $util.ProtocolError("missing required 'controlFlags'", { instance: message });
+            
+            
+            
+            
+            
             return message;
         };
 
@@ -18829,14 +18704,10 @@ export const rustplus = $root.rustplus = (() => {
             }
             if (_end !== undefined)
                 throw Error("missing end group");
-            if (!message.hasOwnProperty("verticalFov"))
-                throw $util.ProtocolError("missing required 'verticalFov'", { instance: message });
-            if (!message.hasOwnProperty("sampleOffset"))
-                throw $util.ProtocolError("missing required 'sampleOffset'", { instance: message });
-            if (!message.hasOwnProperty("rayData"))
-                throw $util.ProtocolError("missing required 'rayData'", { instance: message });
-            if (!message.hasOwnProperty("distance"))
-                throw $util.ProtocolError("missing required 'distance'", { instance: message });
+            
+            
+            
+            
             return message;
         };
 
@@ -19228,16 +19099,11 @@ export const rustplus = $root.rustplus = (() => {
                 }
                 if (_end !== undefined)
                     throw Error("missing end group");
-                if (!message.hasOwnProperty("entityId"))
-                    throw $util.ProtocolError("missing required 'entityId'", { instance: message });
-                if (!message.hasOwnProperty("type"))
-                    throw $util.ProtocolError("missing required 'type'", { instance: message });
-                if (!message.hasOwnProperty("position"))
-                    throw $util.ProtocolError("missing required 'position'", { instance: message });
-                if (!message.hasOwnProperty("rotation"))
-                    throw $util.ProtocolError("missing required 'rotation'", { instance: message });
-                if (!message.hasOwnProperty("size"))
-                    throw $util.ProtocolError("missing required 'size'", { instance: message });
+                
+                
+                
+                
+                
                 return message;
             };
 

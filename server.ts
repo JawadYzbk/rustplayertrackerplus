@@ -15,20 +15,24 @@ import { startRustPlusManager } from "./src/lib/rustplus-manager";
 const port = parseInt(process.env.PORT ?? "3000", 10);
 const dev = process.env.NODE_ENV !== "production";
 
-console.log(`[Server] Starting in ${dev ? "development" : "production"} mode...`);
-console.log(`[Server] Targeting port ${port} on host 0.0.0.0`);
+console.log(`[Server] Initializing...`);
+console.log(`[Server] Environment: ${dev ? "development" : "production"}`);
+console.log(`[Server] Port: ${port}`);
+console.log(`[Server] Host: 0.0.0.0`);
 
 const app = next({ dev, port });
 const handle = app.getRequestHandler();
 
 // ── Start HTTP server immediately to satisfy health checks ──────────────────
+console.log(`[Server] Creating HTTP server...`);
 const server = createServer((req, res) => {
   const parsedUrl = parse(req.url ?? "/", true);
   void handle(req, res, parsedUrl);
 });
 
+console.log(`[Server] Attempting to listen on port ${port}...`);
 server.listen(port, "0.0.0.0", () => {
-  console.log(`[Server] Listening on http://0.0.0.0:${port} (${dev ? "dev" : "prod"})`);
+  console.log(`[Server] SUCCESS: Listening on http://0.0.0.0:${port}`);
 
   // ── Prepare Next.js + Workers in background ────────────────────────────────
   app.prepare().then(() => {

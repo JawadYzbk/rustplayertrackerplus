@@ -1,8 +1,8 @@
 FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat gcompat
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies
@@ -42,9 +42,11 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-EXPOSE 3000
+# Set default port
 ENV PORT 3000
+EXPOSE 3000
 ENV HOSTNAME "0.0.0.0"
 
-# Push schema and start the custom server
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]
+# Use a more resilient startup command. 
+# We run prisma push in the background so it doesn't block Render's port detection.
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss & npm start"]
