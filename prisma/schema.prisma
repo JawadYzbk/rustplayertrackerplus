@@ -20,6 +20,10 @@ model AppUser {
   fcmIssuedAt      DateTime?
   fcmExpiresAt     DateTime?
 
+  // Customization
+  notificationPrefix String @default("[Tracker]")
+  commandPrefix      String @default("!")
+
   servers     Server[]
   players     Player[]
   devices     SmartDevice[]
@@ -57,6 +61,7 @@ model SmartDevice {
   name      String
   customCommand String? // Custom text to trigger this device
   type      String   // 'switch', 'alarm', etc.
+  icon      String?  // Rust item shortname (e.g. smart.switch)
   createdAt DateTime @default(now())
   isActive  Boolean  @default(true)
 

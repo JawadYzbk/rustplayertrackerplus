@@ -393,28 +393,29 @@ async function upsertDeviceFromPairing(userId: string, pairing: PairingDevicePay
   });
 
   let nameToUse = pairing.name;
+  let iconToUse = "smart.switch";
+
+  const typeMap: Record<string, { baseName: string; icon: string }> = {
+    "1": { baseName: "switch", icon: "smart.switch" },
+    "2": { baseName: "smartalarm", icon: "smart.alarm" },
+    "3": { baseName: "storagemonitor", icon: "storage.monitor" },
+    "switch": { baseName: "switch", icon: "smart.switch" },
+    "alarm": { baseName: "smartalarm", icon: "smart.alarm" },
+    "storagemonitor": { baseName: "storagemonitor", icon: "storage.monitor" }
+  };
+
+  const normalizedType = pairing.entityType.toLowerCase();
+  const typeConfig = typeMap[normalizedType] || typeMap[pairing.entityType] || { baseName: "device", icon: "smart.switch" };
+  iconToUse = typeConfig.icon;
 
   // If it's a new device or currently has a generic name, use incremental naming
   if (!existingDevice || existingDevice.name === "Smart Device") {
-    const typeMap: Record<string, string> = {
-      "1": "switch",
-      "2": "smartalarm",
-      "3": "storagemonitor",
-      "switch": "switch",
-      "alarm": "smartalarm",
-      "storagemonitor": "storagemonitor"
-    };
-    
-    // Normalize type
-    const normalizedType = pairing.entityType.toLowerCase();
-    const baseName = typeMap[normalizedType] || typeMap[pairing.entityType] || "device";
-    
     // Count existing devices of this type for this server to increment
     const count = await prisma.smartDevice.count({
       where: { userId, serverId: server.id, type: pairing.entityType }
     });
     
-    nameToUse = `${baseName}${count + 1}`;
+    nameToUse = `${typeConfig.baseName}${count + 1}`;
   }
 
   await prisma.smartDevice.upsert({
@@ -425,11 +426,13 @@ async function upsertDeviceFromPairing(userId: string, pairing: PairingDevicePay
       serverId: server.id,
       name: nameToUse,
       type: pairing.entityType,
+      icon: iconToUse,
     },
     update: {
       // Only update type and serverId, keep existing name if user changed it
       type: pairing.entityType,
       serverId: server.id,
+      icon: iconToUse,
     },
   });
 }

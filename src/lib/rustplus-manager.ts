@@ -273,9 +273,19 @@ async function cleanupIdleConnections() {
 }
 
 async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerSteamId: string, message: string) {
-  if (!message || typeof message !== "string" || !message.startsWith(COMMAND_PREFIX)) return;
+  if (!message || typeof message !== "string") return;
 
   // We need to find the serverId for THIS specific user that matches this connection
+  const user = await prisma.appUser.findUnique({
+    where: { id: userId },
+    select: { notificationPrefix: true, commandPrefix: true },
+  });
+
+  if (!user) return;
+
+  const cmdPrefix = user.commandPrefix || "!";
+  if (!message.startsWith(cmdPrefix)) return;
+
   const server = await prisma.server.findFirst({
     where: {
       userId,
@@ -286,15 +296,16 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
 
   if (!server) return;
 
-  const parts = message.slice(COMMAND_PREFIX.length).trim().split(/\s+/);
+  const prefix = user.notificationPrefix || "[Tracker]";
+  const parts = message.slice(cmdPrefix.length).trim().split(/\s+/);
   const command = parts[0].toLowerCase();
   const args = parts.slice(1);
 
-  if (command === "on" || command === "off") {
+  if (command === "on" || command === "off" || command === "status") {
     const deviceName = args.join(" ").toLowerCase();
     if (!deviceName) {
       if (entry.isConnected) {
-        entry.client.sendTeamMessage(`[Tracker] Usage: ${COMMAND_PREFIX}${command} <device name or custom command>`);
+        entry.client.sendTeamMessage(`${prefix} Usage: ${cmdPrefix}${command} <device name or custom command>`);
       }
       return;
     }
@@ -313,7 +324,7 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
 
     if (!device) {
       if (entry.isConnected) {
-        entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" not found or disabled.`);
+        entry.client.sendTeamMessage(`${prefix} Device "${deviceName}" not found or disabled.`);
       }
       return;
     }
@@ -323,18 +334,33 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
       entityId = getNumericEntityId(device.id);
     } catch {
       if (entry.isConnected) {
-        entry.client.sendTeamMessage(`[Tracker] Device "${deviceName}" needs re-pairing.`);
+        entry.client.sendTeamMessage(`${prefix} Device "${deviceName}" needs re-pairing.`);
       }
+      return;
+    }
+
+    const displayName = device.customCommand || device.name;
+
+    if (command === "status") {
+      entry.client.getEntityInfo(entityId, (res: any) => {
+        if (!entry.isConnected) return;
+        if (res.error) {
+          entry.client.sendTeamMessage(`${prefix} Error: ${res.error.error}`);
+        } else if (res.response?.entityInfo) {
+          const val = res.response.entityInfo.payload?.value;
+          const statusStr = val === true ? "ON" : val === false ? "OFF" : "UNKNOWN";
+          entry.client.sendTeamMessage(`${prefix} ${displayName} is currently ${statusStr}.`);
+        }
+      });
       return;
     }
 
     entry.client.setEntityValue(entityId, command === "on", (res: any) => {
       if (!entry.isConnected) return;
       if (res.error) {
-        entry.client.sendTeamMessage(`[Tracker] Error: ${res.error.error}`);
+        entry.client.sendTeamMessage(`${prefix} Error: ${res.error.error}`);
       } else {
-        const displayName = device.customCommand || device.name;
-        entry.client.sendTeamMessage(`[Tracker] Turned ${command} ${displayName}.`);
+        entry.client.sendTeamMessage(`${prefix} Turned ${command.toUpperCase()} ${displayName}.`);
       }
     });
   } else if (command === "devices") {
@@ -347,6 +373,41 @@ async function handleTeamMessage(userId: string, entry: ConnectionEntry, playerS
       const cmd = d.customCommand ? ` (!${d.customCommand})` : "";
       return `${d.name}${cmd}`;
     }).join(", ");
-    entry.client.sendTeamMessage(devices.length ? `[Tracker] Active Devices: ${list}` : "[Tracker] No active devices paired.");
+    entry.client.sendTeamMessage(devices.length ? `${prefix} Active Devices: ${list}` : `${prefix} No active devices paired.`);
+  } else {
+    // If command is none of the above, check if it matches a customCommand for a device (TOGGLE)
+    const device = await prisma.smartDevice.findFirst({
+      where: { 
+        userId, 
+        serverId: server.id, 
+        isActive: true,
+        customCommand: { equals: command, mode: "insensitive" }
+      },
+    });
+
+    if (device) {
+      let entityId: number;
+      try {
+        entityId = getNumericEntityId(device.id);
+      } catch { return; }
+
+      // Get current state then toggle
+      entry.client.getEntityInfo(entityId, (infoRes: any) => {
+        if (!entry.isConnected) return;
+        if (infoRes.response?.entityInfo) {
+          const currentState = infoRes.response.entityInfo.payload?.value;
+          const newState = !currentState;
+          entry.client.setEntityValue(entityId, newState, (res: any) => {
+            if (!entry.isConnected) return;
+            const displayName = device.customCommand || device.name;
+            if (res.error) {
+              entry.client.sendTeamMessage(`${prefix} Error: ${res.error.error}`);
+            } else {
+              entry.client.sendTeamMessage(`${prefix} Toggled ${displayName} ${newState ? "ON" : "OFF"}.`);
+            }
+          });
+        }
+      });
+    }
   }
 }

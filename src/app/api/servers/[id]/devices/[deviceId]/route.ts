@@ -11,6 +11,7 @@ const UpdateDeviceSchema = z.object({
   name: z.string().trim().min(1).optional(),
   customCommand: z.string().trim().min(1).nullable().optional(),
   isActive: z.boolean().optional(),
+  icon: z.string().trim().min(1).nullable().optional(),
 });
 
 const ControlDeviceSchema = z.object({
