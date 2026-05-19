@@ -5,9 +5,9 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 20, // Increased from default 10 to handle worker + app load
-  connectionTimeoutMillis: 10000, // 10s timeout for obtaining a connection
-  idleTimeoutMillis: 30000, // 30s before closing idle connections
+  max: 5, // Reduced from 20 to avoid overwhelming Supabase transaction pooler
+  connectionTimeoutMillis: 15000,
+  idleTimeoutMillis: 30000,
 });
 const adapter = new PrismaPg(pool);
 

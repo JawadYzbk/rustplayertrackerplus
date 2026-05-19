@@ -22,10 +22,18 @@ console.log(`[Server] Host: 0.0.0.0`);
 
 const app = next({ dev, port });
 const handle = app.getRequestHandler();
+let isReady = false;
 
 // ── Start HTTP server immediately to satisfy health checks ──────────────────
 console.log(`[Server] Creating HTTP server...`);
 const server = createServer((req, res) => {
+  if (!isReady) {
+    // Health checks or early traffic get a simple response until Next.js is ready
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Server is starting up... Please wait.");
+    return;
+  }
+
   const parsedUrl = parse(req.url ?? "/", true);
   void handle(req, res, parsedUrl);
 });
@@ -37,6 +45,7 @@ server.listen(port, "0.0.0.0", () => {
   // ── Prepare Next.js + Workers in background ────────────────────────────────
   app.prepare().then(() => {
     console.log("[Server] Next.js preparation complete.");
+    isReady = true;
     
     // Start background worker
     startWorker();
@@ -47,5 +56,6 @@ server.listen(port, "0.0.0.0", () => {
     console.log("[Server] All systems operational.");
   }).catch((err) => {
     console.error("[Server] Failed to prepare Next.js app:", err);
+    process.exit(1);
   });
 });
