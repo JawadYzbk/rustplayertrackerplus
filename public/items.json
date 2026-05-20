@@ -10,7 +10,7 @@
     "category": "Smart Devices"
   },
   {
-    "id": "storagemonitor",
+    "id": "storage.monitor",
     "name": "Storage Monitor",
     "category": "Smart Devices"
   },
@@ -30,87 +30,87 @@
     "category": "Smart Devices"
   },
   {
-    "id": "battery.large",
+    "id": "electric.battery.rechargable.large",
     "name": "Large Rechargeable Battery",
     "category": "Electrical"
   },
   {
-    "id": "battery.medium",
+    "id": "electric.battery.rechargable.medium",
     "name": "Medium Rechargeable Battery",
     "category": "Electrical"
   },
   {
-    "id": "battery.small",
+    "id": "electric.battery.rechargable.small",
     "name": "Small Rechargeable Battery",
     "category": "Electrical"
   },
   {
-    "id": "solarpanel",
+    "id": "electric.solarpanel.large",
     "name": "Solar Panel",
     "category": "Electrical"
   },
   {
-    "id": "generator.wind",
+    "id": "generator.wind.scrap",
     "name": "Wind Turbine",
     "category": "Electrical"
   },
   {
-    "id": "generator.small",
+    "id": "electric.fuelgenerator.small",
     "name": "Small Generator",
     "category": "Electrical"
   },
   {
-    "id": "switch",
+    "id": "electric.switch",
     "name": "Switch",
     "category": "Electrical"
   },
   {
-    "id": "button",
+    "id": "electric.button",
     "name": "Button",
     "category": "Electrical"
   },
   {
-    "id": "timer",
+    "id": "electric.timer",
     "name": "Timer",
     "category": "Electrical"
   },
   {
-    "id": "rfreceiver",
+    "id": "electric.rf.receiver",
     "name": "RF Receiver",
     "category": "Electrical"
   },
   {
-    "id": "rfbroadcaster",
+    "id": "electric.rf.broadcaster",
     "name": "RF Broadcaster",
     "category": "Electrical"
   },
   {
-    "id": "counter",
+    "id": "electric.counter",
     "name": "Counter",
     "category": "Electrical"
   },
   {
-    "id": "electricheater",
+    "id": "electric.heater",
     "name": "Electric Heater",
     "category": "Electrical"
   },
   {
-    "id": "igniter",
+    "id": "electric.igniter",
     "name": "Igniter",
     "category": "Electrical"
   },
   {
-    "id": "hbhfsensor",
+    "id": "electric.hbhfsensor",
     "name": "HBHF Sensor",
     "category": "Electrical"
   },
   {
-    "id": "laserdetector",
+    "id": "electric.laserdetector",
     "name": "Laser Detector",
     "category": "Electrical"
   },
   {
-    "id": "pressurepad",
+    "id": "electric.pressurepad",
     "name": "Pressure Pad",
     "category": "Electrical"
   },
@@ -135,17 +135,17 @@
     "category": "Traps & Defense"
   },
   {
-    "id": "sam_site",
+    "id": "samsite",
     "name": "SAM Site",
     "category": "Traps & Defense"
   },
   {
-    "id": "landmine",
+    "id": "trap.landmine",
     "name": "Landmine",
     "category": "Traps & Defense"
   },
   {
-    "id": "beartrap",
+    "id": "trap.bear",
     "name": "Bear Trap",
     "category": "Traps & Defense"
   },
@@ -180,7 +180,7 @@
     "category": "Doors & Locks"
   },
   {
-    "id": "doorcontrol",
+    "id": "electric.doorcontroller",
     "name": "Door Controller",
     "category": "Doors & Locks"
   },
@@ -205,7 +205,7 @@
     "category": "Industrial"
   },
   {
-    "id": "industrial.furnace",
+    "id": "electric.furnace",
     "name": "Electric Furnace",
     "category": "Industrial"
   },
@@ -215,17 +215,17 @@
     "category": "Industrial"
   },
   {
-    "id": "fluid.pump",
+    "id": "waterpump",
     "name": "Water Pump",
     "category": "Industrial"
   },
   {
-    "id": "water.purifier",
+    "id": "powered.water.purifier",
     "name": "Powered Water Purifier",
     "category": "Industrial"
   },
   {
-    "id": "simplelight",
+    "id": "electric.simplelight",
     "name": "Simple Light",
     "category": "Lighting"
   },
@@ -235,12 +235,12 @@
     "category": "Lighting"
   },
   {
-    "id": "sirenlight",
+    "id": "electric.sirenlight",
     "name": "Siren Light",
     "category": "Lighting"
   },
   {
-    "id": "flasherlight",
+    "id": "electric.flasherlight",
     "name": "Flasher Light",
     "category": "Lighting"
   },
