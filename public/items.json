@@ -10,8 +10,23 @@
     "category": "Smart Devices"
   },
   {
-    "id": "storage.monitor",
+    "id": "storagemonitor",
     "name": "Storage Monitor",
+    "category": "Smart Devices"
+  },
+  {
+    "id": "cctv.camera",
+    "name": "CCTV Camera",
+    "category": "Smart Devices"
+  },
+  {
+    "id": "computerstation",
+    "name": "Computer Station",
+    "category": "Smart Devices"
+  },
+  {
+    "id": "telephone",
+    "name": "Telephone",
     "category": "Smart Devices"
   },
   {
@@ -25,6 +40,11 @@
     "category": "Electrical"
   },
   {
+    "id": "battery.small",
+    "name": "Small Rechargeable Battery",
+    "category": "Electrical"
+  },
+  {
     "id": "solarpanel",
     "name": "Solar Panel",
     "category": "Electrical"
@@ -35,32 +55,32 @@
     "category": "Electrical"
   },
   {
+    "id": "generator.small",
+    "name": "Small Generator",
+    "category": "Electrical"
+  },
+  {
     "id": "switch",
     "name": "Switch",
     "category": "Electrical"
   },
   {
-    "id": "electric.button",
+    "id": "button",
     "name": "Button",
     "category": "Electrical"
   },
   {
-    "id": "laserdetector",
-    "name": "Laser Detector",
+    "id": "timer",
+    "name": "Timer",
     "category": "Electrical"
   },
   {
-    "id": "pressuresplat",
-    "name": "Pressure Pad",
-    "category": "Electrical"
-  },
-  {
-    "id": "rf.receiver",
+    "id": "rfreceiver",
     "name": "RF Receiver",
     "category": "Electrical"
   },
   {
-    "id": "rf.broadcaster",
+    "id": "rfbroadcaster",
     "name": "RF Broadcaster",
     "category": "Electrical"
   },
@@ -70,8 +90,28 @@
     "category": "Electrical"
   },
   {
-    "id": "timer",
-    "name": "Timer",
+    "id": "electricheater",
+    "name": "Electric Heater",
+    "category": "Electrical"
+  },
+  {
+    "id": "igniter",
+    "name": "Igniter",
+    "category": "Electrical"
+  },
+  {
+    "id": "hbhfsensor",
+    "name": "HBHF Sensor",
+    "category": "Electrical"
+  },
+  {
+    "id": "laserdetector",
+    "name": "Laser Detector",
+    "category": "Electrical"
+  },
+  {
+    "id": "pressurepad",
+    "name": "Pressure Pad",
     "category": "Electrical"
   },
   {
@@ -85,7 +125,7 @@
     "category": "Traps & Defense"
   },
   {
-    "id": "flametrap",
+    "id": "flameturret",
     "name": "Flame Turret",
     "category": "Traps & Defense"
   },
@@ -135,13 +175,13 @@
     "category": "Doors & Locks"
   },
   {
-    "id": "vertical.shutter",
-    "name": "Shutter",
+    "id": "wall.frame.garagedoor",
+    "name": "Garage Door",
     "category": "Doors & Locks"
   },
   {
-    "id": "wall.frame.garagedoor",
-    "name": "Garage Door",
+    "id": "doorcontrol",
+    "name": "Door Controller",
     "category": "Doors & Locks"
   },
   {
@@ -155,6 +195,11 @@
     "category": "Doors & Locks"
   },
   {
+    "id": "industrial.conveyor",
+    "name": "Industrial Conveyor",
+    "category": "Industrial"
+  },
+  {
     "id": "industrial.crafter",
     "name": "Industrial Crafter",
     "category": "Industrial"
@@ -165,8 +210,8 @@
     "category": "Industrial"
   },
   {
-    "id": "industrial.conveyor",
-    "name": "Industrial Conveyor",
+    "id": "fluid.switch",
+    "name": "Fluid Switch & Pump",
     "category": "Industrial"
   },
   {
@@ -178,5 +223,35 @@
     "id": "water.purifier",
     "name": "Powered Water Purifier",
     "category": "Industrial"
+  },
+  {
+    "id": "simplelight",
+    "name": "Simple Light",
+    "category": "Lighting"
+  },
+  {
+    "id": "searchlight",
+    "name": "Search Light",
+    "category": "Lighting"
+  },
+  {
+    "id": "sirenlight",
+    "name": "Siren Light",
+    "category": "Lighting"
+  },
+  {
+    "id": "flasherlight",
+    "name": "Flasher Light",
+    "category": "Lighting"
+  },
+  {
+    "id": "strobelight",
+    "name": "Strobe Light",
+    "category": "Lighting"
+  },
+  {
+    "id": "fogmachine",
+    "name": "Fogger-3000",
+    "category": "Lighting"
   }
 ]

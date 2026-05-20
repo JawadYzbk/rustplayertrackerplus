@@ -289,7 +289,7 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                       <div className="flex items-start justify-between">
                         <div className="flex gap-3 items-center">
                           <div 
-                            className="relative group cursor-pointer w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-muted-foreground/10 hover:border-primary/50 transition-all"
+                            className="relative group cursor-pointer w-14 h-14 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-muted-foreground/10 hover:border-primary/50 transition-all"
                             onClick={() => {
                               setSelectingIconDeviceId(device.id);
                               setIconDialogOpen(true);
@@ -302,16 +302,16 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                               <img 
                                 src={`https://cdn.rusthelp.com/images/public/${device.icon}.png`} 
                                 alt={device.icon}
-                                className="w-8 h-8 object-contain group-hover:scale-90 transition-transform"
+                                className="w-11 h-11 object-contain group-hover:scale-90 transition-transform"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = 'https://cdn.rusthelp.com/images/public/smart.switch.png';
                                 }}
                               />
                             ) : (
-                              <Smartphone className="w-5 h-5 text-muted-foreground/50 group-hover:scale-90 transition-transform" />
+                              <Smartphone className="w-7 h-7 text-muted-foreground/50 group-hover:scale-90 transition-transform" />
                             )}
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Pencil className="w-3.5 h-3.5 text-white" />
+                              <Pencil className="w-4 h-4 text-white" />
                             </div>
                           </div>
                           <div className="space-y-1">
@@ -585,11 +585,11 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                             : "bg-zinc-900 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-850 text-zinc-300"
                         }`}
                       >
-                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden bg-black/25 rounded border border-zinc-800/40">
+                        <div className="w-16 h-16 flex items-center justify-center overflow-hidden bg-black/25 rounded border border-zinc-800/40">
                           <img
                             src={`https://cdn.rusthelp.com/images/public/${item.id}.png`}
                             alt={item.name}
-                            className="w-8 h-8 object-contain"
+                            className="w-13 h-13 object-contain"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://cdn.rusthelp.com/images/public/smart.switch.png';
                             }}
