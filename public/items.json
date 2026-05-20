@@ -1,0 +1,182 @@
+[
+  {
+    "id": "smart.switch",
+    "name": "Smart Switch",
+    "category": "Smart Devices"
+  },
+  {
+    "id": "smart.alarm",
+    "name": "Smart Alarm",
+    "category": "Smart Devices"
+  },
+  {
+    "id": "storage.monitor",
+    "name": "Storage Monitor",
+    "category": "Smart Devices"
+  },
+  {
+    "id": "battery.large",
+    "name": "Large Rechargeable Battery",
+    "category": "Electrical"
+  },
+  {
+    "id": "battery.medium",
+    "name": "Medium Rechargeable Battery",
+    "category": "Electrical"
+  },
+  {
+    "id": "solarpanel",
+    "name": "Solar Panel",
+    "category": "Electrical"
+  },
+  {
+    "id": "generator.wind",
+    "name": "Wind Turbine",
+    "category": "Electrical"
+  },
+  {
+    "id": "switch",
+    "name": "Switch",
+    "category": "Electrical"
+  },
+  {
+    "id": "electric.button",
+    "name": "Button",
+    "category": "Electrical"
+  },
+  {
+    "id": "laserdetector",
+    "name": "Laser Detector",
+    "category": "Electrical"
+  },
+  {
+    "id": "pressuresplat",
+    "name": "Pressure Pad",
+    "category": "Electrical"
+  },
+  {
+    "id": "rf.receiver",
+    "name": "RF Receiver",
+    "category": "Electrical"
+  },
+  {
+    "id": "rf.broadcaster",
+    "name": "RF Broadcaster",
+    "category": "Electrical"
+  },
+  {
+    "id": "counter",
+    "name": "Counter",
+    "category": "Electrical"
+  },
+  {
+    "id": "timer",
+    "name": "Timer",
+    "category": "Electrical"
+  },
+  {
+    "id": "autoturret",
+    "name": "Auto Turret",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "guntrap",
+    "name": "Shotgun Trap",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "flametrap",
+    "name": "Flame Turret",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "teslacoil",
+    "name": "Tesla Coil",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "sam_site",
+    "name": "SAM Site",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "landmine",
+    "name": "Landmine",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "beartrap",
+    "name": "Bear Trap",
+    "category": "Traps & Defense"
+  },
+  {
+    "id": "door.hinged.metal",
+    "name": "Sheet Metal Door",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "door.double.hinged.metal",
+    "name": "Sheet Metal Double Door",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "door.hinged.toptier",
+    "name": "Armored Door",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "door.double.hinged.toptier",
+    "name": "Armored Double Door",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "floor.ladder.hatch",
+    "name": "Ladder Hatch",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "vertical.shutter",
+    "name": "Shutter",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "wall.frame.garagedoor",
+    "name": "Garage Door",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "lock.code",
+    "name": "Code Lock",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "lock.key",
+    "name": "Key Lock",
+    "category": "Doors & Locks"
+  },
+  {
+    "id": "industrial.crafter",
+    "name": "Industrial Crafter",
+    "category": "Industrial"
+  },
+  {
+    "id": "industrial.furnace",
+    "name": "Electric Furnace",
+    "category": "Industrial"
+  },
+  {
+    "id": "industrial.conveyor",
+    "name": "Industrial Conveyor",
+    "category": "Industrial"
+  },
+  {
+    "id": "fluid.pump",
+    "name": "Water Pump",
+    "category": "Industrial"
+  },
+  {
+    "id": "water.purifier",
+    "name": "Powered Water Purifier",
+    "category": "Industrial"
+  }
+]

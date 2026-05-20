@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { 
@@ -13,7 +13,9 @@ import {
   ArrowLeft,
   Terminal,
   Save,
-  ChevronRight
+  ChevronRight,
+  Pencil,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +23,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface SmartDevice {
   id: string;
@@ -54,6 +62,57 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
   const [editForm, setEditForm] = useState({ name: "", customCommand: "", icon: "" });
   const [saving, setSaving] = useState(false);
   const [controllingId, setControllingId] = useState<string | null>(null);
+
+  // Dedicated Icon Selection Dialog State
+  const [iconDialogOpen, setIconDialogOpen] = useState(false);
+  const [selectingIconDeviceId, setSelectingIconDeviceId] = useState<string | null>(null);
+  const [allItems, setAllItems] = useState<{ id: string, name: string, category: string }[]>([]);
+  const [iconSearchQuery, setIconSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  useEffect(() => {
+    axios.get("/items.json")
+      .then(res => setAllItems(res.data))
+      .catch(() => {});
+  }, []);
+
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    allItems.forEach(item => cats.add(item.category));
+    return ["All", ...Array.from(cats)];
+  }, [allItems]);
+
+  const filteredItems = useMemo(() => {
+    return allItems.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
+                            item.id.toLowerCase().includes(iconSearchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [allItems, iconSearchQuery, selectedCategory]);
+
+  const displayedItems = useMemo(() => {
+    if (!iconSearchQuery.trim() && selectedCategory === "All") {
+      return filteredItems.slice(0, 15);
+    }
+    return filteredItems;
+  }, [filteredItems, iconSearchQuery, selectedCategory]);
+
+  async function handleUpdateDeviceIcon(deviceId: string, iconName: string | null) {
+    try {
+      const updated = await axios.patch<SmartDevice>(`/api/servers/${serverId}/devices/${deviceId}`, {
+        icon: iconName
+      });
+      setDevices(devices.map(d => d.id === deviceId ? updated.data : d));
+      if (editingDeviceId === deviceId) {
+        setEditForm(prev => ({ ...prev, icon: iconName || "" }));
+      }
+      toast.success("Device icon updated");
+      setIconDialogOpen(false);
+    } catch {
+      toast.error("Failed to update device icon");
+    }
+  }
 
   useEffect(() => {
     fetchData();
@@ -229,19 +288,31 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                     <div className="p-4 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex gap-3 items-center">
-                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-muted-foreground/10">
+                          <div 
+                            className="relative group cursor-pointer w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden shrink-0 border border-muted-foreground/10 hover:border-primary/50 transition-all"
+                            onClick={() => {
+                              setSelectingIconDeviceId(device.id);
+                              setIconDialogOpen(true);
+                              setIconSearchQuery("");
+                              setSelectedCategory("All");
+                            }}
+                            title="Click to change icon"
+                          >
                             {device.icon ? (
                               <img 
                                 src={`https://cdn.rusthelp.com/images/public/${device.icon}.png`} 
                                 alt={device.icon}
-                                className="w-8 h-8 object-contain"
+                                className="w-8 h-8 object-contain group-hover:scale-90 transition-transform"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).src = 'https://cdn.rusthelp.com/images/public/smart.switch.png';
                                 }}
                               />
                             ) : (
-                              <Smartphone className="w-5 h-5 text-muted-foreground/50" />
+                              <Smartphone className="w-5 h-5 text-muted-foreground/50 group-hover:scale-90 transition-transform" />
                             )}
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Pencil className="w-3.5 h-3.5 text-white" />
+                            </div>
                           </div>
                           <div className="space-y-1">
                             {editingDeviceId === device.id ? (
@@ -310,12 +381,28 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[9px] font-bold text-muted-foreground uppercase ml-1">Icon (Shortname)</label>
-                                <Input 
-                                  placeholder="smart.switch" 
-                                  className="h-8 text-xs font-mono"
-                                  value={editForm.icon}
-                                  onChange={(e) => setEditForm({...editForm, icon: e.target.value})}
-                                />
+                                <div className="flex gap-2">
+                                  <Input 
+                                    placeholder="smart.switch" 
+                                    className="h-8 text-xs font-mono bg-muted/20"
+                                    value={editForm.icon}
+                                    readOnly
+                                  />
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-8 px-2.5"
+                                    onClick={() => {
+                                      setSelectingIconDeviceId(device.id);
+                                      setIconDialogOpen(true);
+                                      setIconSearchQuery("");
+                                      setSelectedCategory("All");
+                                    }}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                             <div className="flex gap-2">
@@ -441,6 +528,103 @@ export default function ServerShowPage({ params }: { params: Promise<{ id: strin
           </CardContent>
         </Card>
       </div>
+
+      {/* Icon Selector Dialog */}
+      <Dialog open={iconDialogOpen} onOpenChange={setIconDialogOpen}>
+        <DialogContent className="max-w-md bg-zinc-950 border-zinc-800 text-zinc-100 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Select Device Icon</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-2">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items (e.g. switch, alarm)..."
+                className="pl-9 h-9 bg-zinc-900 border-zinc-800 focus-visible:ring-primary text-sm"
+                value={iconSearchQuery}
+                onChange={(e) => setIconSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Category Tags */}
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pb-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    selectedCategory === cat
+                      ? "bg-primary text-primary-foreground shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                      : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 border border-zinc-800"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Icons Grid */}
+            <div className="border border-zinc-800 rounded-lg p-2 bg-zinc-900/50 max-h-72 overflow-y-auto">
+              {displayedItems.length === 0 ? (
+                <div className="text-center py-8 text-sm text-zinc-500">
+                  No icons found matching query.
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {displayedItems.map((item) => {
+                    const isSelected = devices.find(d => d.id === selectingIconDeviceId)?.icon === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => selectingIconDeviceId && handleUpdateDeviceIcon(selectingIconDeviceId, item.id)}
+                        className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${
+                          isSelected
+                            ? "bg-primary/10 border-primary shadow-[0_0_8px_rgba(59,130,246,0.2)] text-primary-foreground"
+                            : "bg-zinc-900 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-850 text-zinc-300"
+                        }`}
+                      >
+                        <div className="w-10 h-10 flex items-center justify-center overflow-hidden bg-black/25 rounded border border-zinc-800/40">
+                          <img
+                            src={`https://cdn.rusthelp.com/images/public/${item.id}.png`}
+                            alt={item.name}
+                            className="w-8 h-8 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://cdn.rusthelp.com/images/public/smart.switch.png';
+                            }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-center font-medium line-clamp-1 w-full px-0.5">
+                          {item.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Default / Reset Option */}
+            <div className="flex gap-2 pt-1 border-t border-zinc-800 pt-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-8 text-xs border-zinc-800 hover:bg-zinc-900 hover:text-zinc-100"
+                onClick={() => selectingIconDeviceId && handleUpdateDeviceIcon(selectingIconDeviceId, null)}
+              >
+                Reset to Default Icon
+              </Button>
+              <Button
+                variant="ghost"
+                className="h-8 text-xs text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                onClick={() => setIconDialogOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
