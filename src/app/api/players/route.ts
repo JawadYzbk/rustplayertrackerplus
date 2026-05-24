@@ -65,3 +65,41 @@ export async function GET(req: NextRequest) {
 
   return Response.json({ data: result, total, page, limit });
 }
+
+const BatchDeleteSchema = z.object({
+  playerIds: z.array(z.string()).min(1),
+});
+
+export async function DELETE(req: NextRequest) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
+  try {
+    const body = await req.json();
+    const parsed = BatchDeleteSchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const { playerIds } = parsed.data;
+
+    await prisma.player.deleteMany({
+      where: {
+        userId,
+        id: { in: playerIds },
+      },
+    });
+
+    return Response.json({ success: true, count: playerIds.length });
+  } catch (error) {
+    console.error("Batch delete error:", error);
+    return Response.json(
+      { error: "Failed to delete players" },
+      { status: 500 }
+    );
+  }
+}

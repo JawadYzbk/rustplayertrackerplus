@@ -132,6 +132,10 @@ export default function PlayersPage() {
   const [togglingNotifId, setTogglingNotifId] = useState<string | null>(null);
   const [assigningGroupId, setAssigningGroupId] = useState<string | null>(null);
 
+  // Batch Selection State
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+
   // Group Management State
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
@@ -256,6 +260,44 @@ export default function PlayersPage() {
     }
   };
 
+  const handleBatchDelete = async () => {
+    const count = selectedPlayerIds.size;
+    if (count === 0) return;
+    if (!confirm(`Are you sure you want to stop tracking ${count} selected players?`)) return;
+
+    setIsBatchDeleting(true);
+    try {
+      await axios.delete("/api/players", {
+        data: { playerIds: Array.from(selectedPlayerIds) },
+      });
+      toast.success(`Stopped tracking ${count} players`);
+      setSelectedPlayerIds(new Set());
+      fetchPlayers();
+      fetchGroups();
+    } catch {
+      toast.error("Failed to delete selected players");
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
+  const toggleSelectPlayer = (playerId: string) => {
+    setSelectedPlayerIds(prev => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedPlayerIds.size === players.length && players.length > 0) {
+      setSelectedPlayerIds(new Set());
+    } else {
+      setSelectedPlayerIds(new Set(players.map(p => p.id)));
+    }
+  };
+
   const handleToggleRustPlusNotifications = async (
     playerId: string,
     enabled: boolean
@@ -332,7 +374,7 @@ export default function PlayersPage() {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    if (!confirm("Delete this group? Players in this group will become ungrouped.")) return;
+    if (!confirm("Delete this group? ALL players in this group will also be deleted from tracking.")) return;
     setDeletingGroupId(groupId);
     try {
       await axios.delete(`/api/groups/${groupId}`);
@@ -383,15 +425,23 @@ export default function PlayersPage() {
   };
 
   const renderPlayerCard = (player: Player) => (
-    <div key={player.id} className="rounded-lg border bg-card p-4 space-y-3">
+    <div key={player.id} className={`rounded-xl border bg-card p-4 space-y-3 transition-all ${selectedPlayerIds.has(player.id) ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : ''}`}>
       <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          {player.isOnline ? (
-            <span className="pulse-dot"></span>
-          ) : (
-            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></span>
-          )}
-          <h4 className="font-medium text-sm">{player.name}</h4>
+        <div className="flex items-center gap-3">
+          <input 
+            type="checkbox" 
+            className="rounded border-white/20 bg-white/5 accent-primary h-4 w-4"
+            checked={selectedPlayerIds.has(player.id)}
+            onChange={() => toggleSelectPlayer(player.id)}
+          />
+          <div className="flex items-center gap-2">
+            {player.isOnline ? (
+              <span className="pulse-dot"></span>
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30"></span>
+            )}
+            <h4 className="font-bold text-sm">{player.name}</h4>
+          </div>
         </div>
         <Button 
           variant="ghost" 
@@ -473,7 +523,15 @@ export default function PlayersPage() {
   );
 
   const renderPlayerRow = (player: Player) => (
-    <TableRow key={player.id} className="group transition-colors">
+    <TableRow key={player.id} className={`group transition-colors ${selectedPlayerIds.has(player.id) ? 'bg-primary/5' : ''}`}>
+      <TableCell className="w-10">
+        <input 
+          type="checkbox" 
+          className="rounded border-white/20 bg-white/5 accent-primary"
+          checked={selectedPlayerIds.has(player.id)}
+          onChange={() => toggleSelectPlayer(player.id)}
+        />
+      </TableCell>
       <TableCell>
         {player.isOnline ? (
           <div className="flex items-center gap-2">
@@ -783,9 +841,35 @@ export default function PlayersPage() {
             
             {/* Desktop View */}
             <div className="rounded-2xl border border-white/5 overflow-hidden hidden md:block">
+              {selectedPlayerIds.size > 0 && (
+                <div className="bg-destructive/10 border-b border-white/5 p-3 px-6 flex items-center justify-between animate-in slide-in-from-top-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-destructive flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    {selectedPlayerIds.size} Players Selected
+                  </span>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="h-8 text-[10px] font-bold uppercase tracking-widest rounded-lg"
+                    onClick={handleBatchDelete}
+                    disabled={isBatchDeleting}
+                  >
+                    {isBatchDeleting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                    Confirm Delete
+                  </Button>
+                </div>
+              )}
               <Table>
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-border/40 hover:bg-transparent">
+                    <TableHead className="w-10">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-white/20 bg-white/5 accent-primary"
+                        checked={selectedPlayerIds.size === players.length && players.length > 0}
+                        onChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <SortableHead
                       label="Status"
                       sortKey="status"
@@ -849,7 +933,7 @@ export default function PlayersPage() {
                               className="bg-white/5 hover:bg-white/10 cursor-pointer border-border/40"
                               onClick={() => toggleGroupExpand(group.id)}
                             >
-                              <TableCell colSpan={8} className="py-3">
+                              <TableCell colSpan={9} className="py-3">
                                 <div className="flex items-center gap-3 font-bold text-xs uppercase tracking-wider">
                                   <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
                                   <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: group.color || '#ccc' }} />
@@ -870,7 +954,7 @@ export default function PlayersPage() {
                             className="bg-white/5 hover:bg-white/10 cursor-pointer border-border/40"
                             onClick={() => toggleGroupExpand("ungrouped")}
                           >
-                            <TableCell colSpan={8} className="py-3">
+                            <TableCell colSpan={9} className="py-3">
                               <div className="flex items-center gap-3 font-bold text-xs uppercase tracking-wider text-muted-foreground">
                                 <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
                                 Ungrouped
@@ -889,6 +973,24 @@ export default function PlayersPage() {
 
             {/* Mobile View */}
             <div className="grid gap-4 md:hidden">
+              {selectedPlayerIds.size > 0 && (
+                <div className="fixed bottom-20 left-4 right-4 z-50 bg-destructive p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-8">
+                  <div className="flex flex-col">
+                    <span className="text-white text-sm font-bold">{selectedPlayerIds.size} Players</span>
+                    <span className="text-white/70 text-[10px] uppercase tracking-widest font-bold">Selected</span>
+                  </div>
+                  <Button 
+                    variant="secondary"
+                    size="sm"
+                    className="h-10 px-6 rounded-xl font-bold"
+                    onClick={handleBatchDelete}
+                    disabled={isBatchDeleting}
+                  >
+                    {isBatchDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Delete Selected
+                  </Button>
+                </div>
+              )}
               {players.length === 0 && !loading ? (
                 <div className="h-40 flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-border/40 rounded-2xl gap-3">
                   <Users size={32} className="opacity-10" />

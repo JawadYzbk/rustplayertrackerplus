@@ -54,6 +54,14 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // Delete all players in this group first (cascade)
+    await prisma.player.deleteMany({
+      where: {
+        userId,
+        groupId: id,
+      },
+    });
+
     await prisma.playerGroup.delete({
       where: {
         userId_id: {
