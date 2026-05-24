@@ -105,7 +105,11 @@ async function createConnection(credKey: string, serverKey: string, creds: any) 
 
   client.on("disconnected", () => {
     entry.isConnected = false;
-    connectionPool.delete(credKey);
+    console.log(`[RustPlusManager] Disconnected: ${credKey.substring(0, 20)}. Client will attempt auto-reconnect.`);
+    // We NO LONGER delete from connectionPool here, because the RustPlusTS client 
+    // now handles its own exponential backoff reconnection.
+    // We only remove the shared data provider entry so someone else can take over if needed,
+    // although with auto-reconnect, this same client might become the provider again.
     if (serverSharedData.get(serverKey)?.provider === credKey) {
       serverSharedData.delete(serverKey);
     }

@@ -51,7 +51,7 @@ model Server {
   devices  SmartDevice[]
 
   @@id([userId, id])
-  @@index([userId, createdAt])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model SmartDevice {
@@ -91,7 +91,7 @@ model Player {
   hourlyStats PlayerHourlyStat[]
 
   @@id([userId, id])
-  @@index([userId, serverId])
+  @@index([userId, serverId, lastSeen(sort: Desc)])
   @@index([userId, groupId])
 }
 
@@ -122,9 +122,9 @@ model Session {
   player Player  @relation(fields: [userId, playerId], references: [userId, id], onDelete: Cascade)
   server Server  @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)
 
-  @@index([userId, playerId, joinedAt])
-  @@index([userId, serverId])
-  @@index([userId, leftAt])
+  @@index([userId, playerId, joinedAt(sort: Desc)])
+  @@index([userId, serverId, joinedAt(sort: Desc)])
+  @@index([userId, leftAt(sort: Desc)])
 }
 
 model PlayerDailyStat {

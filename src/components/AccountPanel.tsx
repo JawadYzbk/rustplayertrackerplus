@@ -62,10 +62,8 @@ export default function AccountPanel() {
   return (
     <div className="flex items-center gap-3">
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger>
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <Settings className="h-5 w-5" />
-          </Button>
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="h-9 w-9" />}>
+          <Settings className="h-5 w-5" />
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

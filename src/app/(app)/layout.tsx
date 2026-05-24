@@ -19,7 +19,7 @@ export default async function AppLayout({
     <div className="flex min-h-screen">
       <AppSidebar />
       <div className="app-main flex-1">
-        <header className="mb-6 flex items-center justify-between gap-4 rounded-2xl border bg-card/60 px-4 py-3 md:px-5">
+        <header className="sticky top-4 z-50 mb-6 flex items-center justify-between gap-4 rounded-2xl glass-card px-4 py-3 md:px-5">
           <div>
             <p className="text-sm font-semibold text-foreground">
               Mission Control

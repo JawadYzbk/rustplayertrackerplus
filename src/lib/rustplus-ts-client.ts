@@ -6,7 +6,10 @@ export class RustPlusTS extends RustPlus {
   websocket: any;
   AppRequest: any;
   AppMessage: any;
-  seqCallbacks: any[];
+  seqCallbacks: Map<number, (res: any) => boolean | void>;
+  reconnectAttempts: number = 0;
+  maxReconnectDelay: number = 30000;
+  isExplicitlyClosed: boolean = false;
 
   constructor(
     server: string,
@@ -16,14 +19,23 @@ export class RustPlusTS extends RustPlus {
     useFacepunchProxy = false
   ) {
     super(server, port, playerId, playerToken, useFacepunchProxy);
-    this.seqCallbacks = [];
+    this.seqCallbacks = new Map();
+  }
+
+  override disconnect(): void {
+    this.isExplicitlyClosed = true;
+    if (this.websocket) {
+      this.websocket.terminate(); // Force close
+    }
+    super.disconnect();
   }
 
   override connect(): void {
+    this.isExplicitlyClosed = false;
     // make sure existing connection is disconnected before connecting again.
     if (this.websocket) {
       try {
-        this.disconnect();
+        this.websocket.terminate();
       } catch {
         // ignore
       }
@@ -45,6 +57,7 @@ export class RustPlusTS extends RustPlus {
 
     // fire event when connected
     this.websocket.on("open", () => {
+      this.reconnectAttempts = 0;
       this.emit("connected");
     });
 
@@ -63,16 +76,16 @@ export class RustPlusTS extends RustPlus {
         if (
           message.response &&
           message.response.seq &&
-          this.seqCallbacks[message.response.seq]
+          this.seqCallbacks.has(message.response.seq)
         ) {
           // get the callback for the response sequence
-          const callback = this.seqCallbacks[message.response.seq];
+          const callback = this.seqCallbacks.get(message.response.seq)!;
 
           // call the callback with the response message
           const result = callback(message);
 
           // remove the callback
-          delete this.seqCallbacks[message.response.seq];
+          this.seqCallbacks.delete(message.response.seq);
 
           // if callback returns true, don't fire message event
           if (result) {
@@ -90,6 +103,16 @@ export class RustPlusTS extends RustPlus {
     // fire event when disconnected
     this.websocket.on("close", () => {
       this.emit("disconnected");
+      
+      if (!this.isExplicitlyClosed) {
+        const delay = Math.min(
+          Math.pow(2, this.reconnectAttempts) * 1000,
+          this.maxReconnectDelay
+        );
+        this.reconnectAttempts++;
+        console.log(`[RustPlusTS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})...`);
+        setTimeout(() => this.connect(), delay);
+      }
     });
   }
 }

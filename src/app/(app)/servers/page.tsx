@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -492,409 +493,301 @@ export default function ServersPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Servers</h1>
-        <p className="text-muted-foreground">Manage your tracked Rust servers.</p>
+    <div className="max-w-7xl mx-auto space-y-10 pb-10">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl mb-2">Servers</h1>
+          <p className="text-lg text-muted-foreground">Manage your tracked Rust servers.</p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus size={18} className="text-primary" /> Add Server
-          </CardTitle>
-          <CardDescription>
-            Enter the BattleMetrics Server ID and a descriptive name.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAdd} className="flex items-end gap-4">
-            <div className="space-y-2 flex-1 max-w-sm">
-              <label className="text-sm font-medium">Server ID</label>
-              <Input
-                placeholder="e.g. 12345678"
-                value={newId}
-                onChange={(e) => setNewId(e.target.value)}
-              />
-            </div>
-            <Button type="submit" disabled={adding || !newId}>
-              {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add Server (Auto-fetches name)
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1 space-y-8">
+          <Card className="glass-card border-none shadow-none overflow-hidden">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="rounded-xl bg-primary/10 p-2.5">
+                  <Plus size={20} className="text-primary" />
+                </div>
+                Add Server
+              </CardTitle>
+              <CardDescription className="text-sm font-medium opacity-70">
+                Enter the BattleMetrics Server ID to begin tracking.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAdd} className="space-y-6">
+                <div className="space-y-2.5">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">BattleMetrics ID</label>
+                  <Input
+                    placeholder="e.g. 12345678"
+                    className="rounded-xl h-11 bg-background/40 border-border/40 focus:bg-background/60 transition-all"
+                    value={newId}
+                    onChange={(e) => setNewId(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" size="lg" className="w-full rounded-xl h-11 shadow-lg" disabled={adding || !newId}>
+                  {adding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ServerIcon className="mr-2 h-4 w-4" />}
+                  Add Server
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Rust+ Client Pairing</CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-xs text-primary gap-1.5"
-              onClick={() => setShowGuide(!showGuide)}
-            >
-              <HelpCircle className="w-3.5 h-3.5" /> 
-              {showGuide ? "Hide Setup Guide" : "How to get credentials?"}
-            </Button>
-          </div>
-          <CardDescription>
-            Use manual credentials from the guides to enable server pairing notifications.
-          </CardDescription>
-          {showGuide && (
-            <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <PairingGuide />
-            </div>
-          )}
-          {fcmInfo?.expiresAt && (
-            <div className={`mt-2 text-xs flex items-center gap-2 p-2 rounded border ${
-              new Date(fcmInfo.expiresAt) < new Date() 
-                ? "bg-destructive/10 border-destructive/20 text-destructive" 
-                : "bg-green-500/10 border-green-500/20 text-green-500"
-            }`}>
-              <Clock size={14} />
-              <span>
-                {new Date(fcmInfo.expiresAt) < new Date() 
-                  ? `FCM Token Expired on ${new Date(fcmInfo.expiresAt).toLocaleDateString()}. Please re-run /credentials add in Discord.`
-                  : `FCM Token valid until ${new Date(fcmInfo.expiresAt).toLocaleDateString()}.`}
-              </span>
-              {fcmInfo.steamId && (
-                <span className="ml-auto opacity-60">Steam: {fcmInfo.steamId}</span>
-              )}
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-xs text-muted-foreground">
-            {pairingStatus ? pairingStatus.message : !fcmInfo?.hasSavedCredentials ? "No active pairing listener. FCM credentials required." : ""}
-          </div>
-          
-          {/* Automatic Login Flow - Temporarily Disabled as requested */}
-          {false && (
-            <div className="flex flex-col gap-2 md:flex-row">
-              <Button onClick={handleConnectRustPlus}>
-                Login Rust+ (Same Tab)
-              </Button>
-              <Input
-                value={manualAuthToken}
-                onChange={(e) => setManualAuthToken(e.target.value)}
-                placeholder="Paste Rust+ Auth Token"
-                className="md:max-w-md"
-              />
-              <Button
-                onClick={() => void startPairingListener(manualAuthToken.trim())}
-                disabled={startingPairing || manualAuthToken.trim().length === 0}
-              >
-                {startingPairing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Start Listener
-              </Button>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div className="grid gap-2">
+          <Card className="glass-card border-none shadow-none overflow-hidden">
+            <CardHeader>
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Manual Credentials Configuration</label>
+                <CardTitle className="text-xl font-bold">Rust+ Setup</CardTitle>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-7 text-[10px] uppercase tracking-wider font-bold"
+                  className="rounded-lg h-8 text-primary hover:bg-primary/10 transition-colors"
+                  onClick={() => setShowGuide(!showGuide)}
+                >
+                  <HelpCircle className="w-4 h-4 mr-1.5" /> 
+                  {showGuide ? "Hide" : "Guide"}
+                </Button>
+              </div>
+              <CardDescription className="text-sm font-medium opacity-70">
+                Configure FCM for server notifications.
+              </CardDescription>
+              {showGuide && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <PairingGuide />
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {fcmInfo?.expiresAt && (
+                <div className={`p-4 rounded-xl border flex items-center gap-3 ${
+                  new Date(fcmInfo.expiresAt) < new Date() 
+                    ? "bg-destructive/10 border-destructive/20 text-destructive" 
+                    : "bg-green-500/10 border-green-500/20 text-green-500"
+                }`}>
+                  <Clock size={16} />
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-0.5">Credential Status</p>
+                    <p className="text-xs font-semibold">
+                      {new Date(fcmInfo.expiresAt) < new Date() 
+                        ? "FCM Token Expired" 
+                        : `Valid until ${new Date(fcmInfo.expiresAt).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full rounded-xl border-border/40 bg-white/5 hover:bg-white/10 h-10 text-xs font-bold uppercase tracking-widest"
                   onClick={() => setShowManualConfig(!showManualConfig)}
                 >
-                  {showManualConfig ? "Collapse" : "Expand Configuration"}
+                  {showManualConfig ? "Close Configuration" : "Manual Configuration"}
                 </Button>
-              </div>
-              
-              {showManualConfig && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Paste Credentials JSON</p>
-                    <textarea
-                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder='{ "gcm": { "androidId": "...", "securityToken": "..." } }'
-                      value={fcmCredentialsJson}
-                      onChange={(e) => setFcmCredentialsJson(e.target.value)}
-                    />
-                    <Button 
-                      className="w-full"
-                      variant="outline"
-                      size="sm"
-                      disabled={startingPairing || !fcmCredentialsJson.trim()}
-                      onClick={() => void startPairingListenerWithJson(fcmCredentialsJson.trim())}
-                    >
-                      Start with JSON
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Or Paste Command String</p>
-                    <textarea
-                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="/credentials add gcm_android_id:... gcm_security_token:..."
-                      value={credentialsCommand}
-                      onChange={(e) => setCredentialsCommand(e.target.value)}
-                    />
-                    <Button 
-                      className="w-full"
-                      variant="outline"
-                      size="sm"
-                      disabled={startingPairing || !credentialsCommand.trim()}
-                      onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
-                    >
-                      Start with Command
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4 py-2">
-              <div className="h-px bg-border flex-1" />
-              <span className="text-[10px] text-muted-foreground uppercase font-bold">Actions</span>
-              <div className="h-px bg-border flex-1" />
-            </div>
-
-            {timeLeft !== null && (
-              <div className="flex justify-center animate-in fade-in zoom-in-95 duration-300">
-                <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-primary/10 border border-primary/20 text-primary shadow-inner shadow-primary/5">
-                  <div className="relative">
-                    <Clock className="w-5 h-5" />
-                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/20"></span>
-                  </div>
-                  <div className="flex flex-col items-center leading-none">
-                    <span className="font-mono font-black text-2xl tracking-tighter">
-                      {Math.floor(timeLeft / 60000)}:{(Math.floor(timeLeft / 1000) % 60).toString().padStart(2, '0')}
-                    </span>
-                    <span className="text-[9px] uppercase tracking-widest font-bold opacity-70">Remaining</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col md:flex-row gap-3">
-              {fcmInfo?.hasSavedCredentials ? (
-                <Button 
-                  className="flex-1 h-12 text-base font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                  onClick={() => void startPairingWithSavedCredentials()}
-                  disabled={startingPairing || timeLeft !== null}
-                >
-                  {startingPairing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  <Wifi className="mr-2 h-5 w-5" /> {timeLeft !== null ? "Pairing Listener Active" : "Start Pairing Listener"}
-                </Button>
-              ) : (
-                <div className="flex-1 p-4 rounded-lg border border-dashed text-center text-sm text-muted-foreground bg-muted/30">
-                  No credentials saved. Paste JSON or Command above to start.
-                </div>
-              )}
-              
-              {pairingStatus && (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
-                <Button variant="destructive" className="h-12 px-8 shadow-lg shadow-destructive/20" onClick={handleStopPairing}>
-                  <WifiOff className="mr-2 h-5 w-5" /> Stop Listener
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {pairingStatus && (
-            <div className="mt-4 rounded-lg border bg-black/90 p-4 font-mono text-[10px] leading-relaxed text-zinc-300 shadow-inner overflow-hidden flex flex-col h-[200px]">
-              <div className="flex items-center justify-between mb-2 border-b border-zinc-800 pb-2 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="font-bold text-zinc-500 uppercase tracking-widest">FCM Console</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    {pairingStatus.status === "listening" ? (
-                      <>
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        <span className="text-green-500 text-[9px] uppercase">Listening</span>
-                      </>
-                    ) : pairingStatus.status === "completed" ? (
-                      <>
-                        <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        <span className="text-green-500 text-[9px] uppercase">Completed</span>
-                      </>
-                    ) : pairingStatus.status === "error" ? (
-                      <>
-                        <AlertCircle className="w-3 h-3 text-red-500" />
-                        <span className="text-red-500 text-[9px] uppercase">Error</span>
-                      </>
-                    ) : (
-                      <span className="text-zinc-500 text-[9px] uppercase">{pairingStatus.status}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto space-y-1 pr-2 scrollbar-thin scrollbar-thumb-zinc-800">
-                {pairingStatus.logs?.length ? (
-                  pairingStatus.logs.map((log, i) => (
-                    <div key={i} className="flex gap-2">
-                      <span className="text-zinc-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
-                      <span className={
-                        log.level === 'error' ? 'text-red-400' : 
-                        log.level === 'warn' ? 'text-amber-400' : 
-                        log.level === 'success' ? 'text-green-400' : 
-                        'text-blue-300'
-                      }>
-                        {log.message}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-zinc-600 italic">Waiting for activity...</div>
-                )}
-                <div id="fcm-console-end" />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ServerIcon size={18} className="text-primary" /> Tracked Servers
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="py-8 flex justify-center text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : servers.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
-              <ServerIcon className="mx-auto h-12 w-12 opacity-20 mb-4" />
-              <p>No servers tracked yet.</p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop View */}
-              <div className="rounded-md border hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>BattleMetrics ID</TableHead>
-                      <TableHead>Tracked Players</TableHead>
-                      <TableHead>Sessions</TableHead>
-                      <TableHead>Rust+</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {servers.map((server) => (
-                      <TableRow key={server.id}>
-                        <TableCell className="font-medium">{server.name}</TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{server.id}</TableCell>
-                        <TableCell>{server._count.players.toLocaleString()}</TableCell>
-                        <TableCell>{server._count.sessions.toLocaleString()}</TableCell>
-                        <TableCell>
-                          {server.rustPlusIp &&
-                          server.rustPlusPort &&
-                          server.rustPlusPlayerId &&
-                          server.rustPlusPlayerToken ? (
-                            <span className="text-xs font-medium text-green-500">Configured</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Not set</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Link
-                            href={`/servers/${server.id}`}
-                            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mr-2")}
-                          >
-                            Devices
-                          </Link>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mr-2"
-                            onClick={() => openRustPlusConfig(server)}
-                          >
-                            Rust+
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewLive(server)}
-                            className="mr-2"
-                          >
-                            Live Players
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(server.id)}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Mobile View */}
-              <div className="grid gap-4 md:hidden">
-                {servers.map((server) => (
-                  <div key={server.id} className="rounded-lg border bg-card p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{server.name}</h4>
-                        <p className="font-mono text-xs text-muted-foreground">{server.id}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(server.id)}
-                        className="text-destructive hover:bg-destructive/10 -mt-2 -mr-2"
+                
+                {showManualConfig && (
+                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="space-y-2">
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold opacity-60">Credentials JSON</p>
+                      <textarea
+                        className="w-full min-h-[100px] rounded-xl border border-border/40 bg-background/40 px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:opacity-50"
+                        placeholder='{ "gcm": { ... } }'
+                        value={fcmCredentialsJson}
+                        onChange={(e) => setFcmCredentialsJson(e.target.value)}
+                      />
+                      <Button 
+                        className="w-full rounded-xl"
+                        variant="secondary"
+                        size="sm"
+                        disabled={startingPairing || !fcmCredentialsJson.trim()}
+                        onClick={() => void startPairingListenerWithJson(fcmCredentialsJson.trim())}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        Start with JSON
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Players</p>
-                        <p>{server._count.players.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Sessions</p>
-                        <p>{server._count.sessions.toLocaleString()}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground text-[10px] uppercase font-semibold">Rust+</p>
-                        {server.rustPlusIp && server.rustPlusPort && server.rustPlusPlayerId && server.rustPlusPlayerToken ? (
-                          <span className="text-xs font-medium text-green-500">Configured</span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Not set</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-2 border-t">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openRustPlusConfig(server)}>Rust+</Button>
-                      <Link 
-                        href={`/servers/${server.id}`}
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1")}
-                      >
-                        Devices
-                      </Link>
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewLive(server)}>Live</Button>
+                  </div>
+                )}
+
+                {timeLeft !== null && (
+                  <div className="flex justify-center py-2 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="inline-flex items-center gap-3 px-6 py-2 rounded-2xl bg-primary/10 border border-primary/20 text-primary">
+                      <div className="relative h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      <span className="font-mono font-bold text-lg tracking-tighter">
+                        {Math.floor(timeLeft / 60000)}:{(Math.floor(timeLeft / 1000) % 60).toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">Active</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                )}
 
-      {/* Live Players Modal */}
+                <div className="flex flex-col gap-3">
+                  {fcmInfo?.hasSavedCredentials ? (
+                    <Button 
+                      className="w-full h-12 text-sm font-bold rounded-xl shadow-lg transition-all active:scale-[0.98]"
+                      onClick={() => void startPairingWithSavedCredentials()}
+                      disabled={startingPairing || timeLeft !== null}
+                    >
+                      {startingPairing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wifi className="mr-2 h-5 w-5" />}
+                      {timeLeft !== null ? "Listener Active" : "Start Pairing Listener"}
+                    </Button>
+                  ) : null}
+                  
+                  {pairingStatus && (pairingStatus.status === "starting" || pairingStatus.status === "listening") && (
+                    <Button variant="destructive" className="h-12 rounded-xl shadow-lg" onClick={handleStopPairing}>
+                      <WifiOff className="mr-2 h-5 w-5" /> Stop Listener
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="lg:col-span-2 glass-card border-none shadow-none overflow-hidden">
+          <CardHeader className="pb-6">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="rounded-xl bg-primary/10 p-2.5">
+                <ServerIcon size={20} className="text-primary" />
+              </div>
+              Tracked Servers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="py-20 flex justify-center text-muted-foreground">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              </div>
+            ) : servers.length === 0 ? (
+              <div className="py-24 text-center text-muted-foreground border-2 border-dashed border-border/40 rounded-2xl bg-white/5">
+                <ServerIcon className="mx-auto h-16 w-16 opacity-10 mb-6" />
+                <p className="text-lg font-medium">No servers tracked yet.</p>
+                <p className="text-sm opacity-60">Add your first BattleMetrics server on the left.</p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop View */}
+                <div className="rounded-2xl border border-white/5 overflow-hidden hidden md:block">
+                  <Table>
+                    <TableHeader className="bg-white/5">
+                      <TableRow className="border-border/40 hover:bg-transparent">
+                        <TableHead className="py-4 text-xs font-bold uppercase tracking-widest">Name</TableHead>
+                        <TableHead className="py-4 text-xs font-bold uppercase tracking-widest">Players</TableHead>
+                        <TableHead className="py-4 text-xs font-bold uppercase tracking-widest">Rust+</TableHead>
+                        <TableHead className="py-4 text-xs font-bold uppercase tracking-widest text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {servers.map((server) => (
+                        <TableRow key={server.id} className="border-border/40 hover:bg-white/5 transition-colors">
+                          <TableCell className="py-5">
+                            <p className="font-bold text-base leading-none">{server.name}</p>
+                            <p className="text-[10px] font-mono text-muted-foreground/60 mt-1.5 tracking-tighter uppercase">{server.id}</p>
+                          </TableCell>
+                          <TableCell className="py-5">
+                            <div className="flex items-center gap-2 font-bold text-lg">
+                              {server._count.players.toLocaleString()}
+                              <span className="text-[10px] uppercase tracking-widest font-bold opacity-40">tracked</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-5">
+                            {server.rustPlusIp ? (
+                              <Badge variant="secondary" className="bg-green-500/10 text-green-500 text-[10px] font-bold uppercase tracking-wider border-none">Ready</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="bg-white/5 text-muted-foreground/40 text-[10px] font-bold uppercase tracking-wider border-none">Missing</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-5 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg h-9 border-border/40 bg-white/5 hover:bg-white/10"
+                                onClick={() => handleViewLive(server)}
+                              >
+                                Live
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg h-9 border-border/40 bg-white/5 hover:bg-white/10"
+                                onClick={() => openRustPlusConfig(server)}
+                              >
+                                Config
+                              </Button>
+                              <Link
+                                href={`/servers/${server.id}`}
+                                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-lg h-9 border-border/40 bg-white/5 hover:bg-white/10")}
+                              >
+                                IoT
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(server.id)}
+                                className="rounded-lg h-9 w-9 text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="grid gap-4 md:hidden">
+                  {servers.map((server) => (
+                    <div key={server.id} className="rounded-2xl border border-white/5 bg-white/5 p-5 space-y-5">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-lg">{server.name}</h4>
+                          <p className="font-mono text-xs text-muted-foreground/60 tracking-tighter uppercase mt-1">{server.id}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(server.id)}
+                          className="text-destructive hover:bg-destructive/10 -mt-2 -mr-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                        <div>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50 mb-1">Players</p>
+                          <p className="font-bold text-lg leading-none">{server._count.players.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50 mb-1">Rust+</p>
+                          {server.rustPlusIp ? (
+                            <span className="text-xs font-bold text-green-500 uppercase tracking-widest">Active</span>
+                          ) : (
+                            <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">Inactive</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button variant="secondary" size="sm" className="flex-1 rounded-xl h-10 font-bold" onClick={() => handleViewLive(server)}>Live</Button>
+                        <Button variant="outline" size="sm" className="flex-1 rounded-xl h-10 font-bold border-border/40" onClick={() => openRustPlusConfig(server)}>Config</Button>
+                        <Link 
+                          href={`/servers/${server.id}`}
+                          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 rounded-xl h-10 font-bold border-border/40")}
+                        >
+                          IoT
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modals & Dialogs below */}
       {liveModalServer && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"

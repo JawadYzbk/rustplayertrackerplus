@@ -207,7 +207,10 @@ export default function PlayersPage() {
   }, [search, page]);
 
   useEffect(() => {
-    fetchGroups();
+    const timer = setTimeout(() => {
+      fetchGroups();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchGroups]);
 
   useEffect(() => {
@@ -565,65 +568,65 @@ export default function PlayersPage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-7xl space-y-10 pb-10">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Players</h1>
-          <p className="text-muted-foreground">View and search tracked players across all servers.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl mb-2">Players</h1>
+          <p className="text-lg text-muted-foreground">Manage and track your player database across all servers.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Dialog open={manageGroupsOpen} onOpenChange={(open) => {
             setManageGroupsOpen(open);
             if (!open) setEditingGroup(null);
           }}>
-            <DialogTrigger render={<Button variant="outline" className="gap-2" />}>
-              <Settings className="h-4 w-4" /> Manage Groups
+            <DialogTrigger render={<Button variant="outline" className="rounded-xl border-border/40 hover:bg-white/5" />}>
+              <Settings className="h-4 w-4 mr-2" /> Manage Groups
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md rounded-2xl glass-panel border-white/5 shadow-2xl">
               <DialogHeader>
-                <DialogTitle>{editingGroup ? `Edit Group: ${editingGroup.name}` : "Manage Player Groups"}</DialogTitle>
+                <DialogTitle className="text-xl font-bold">{editingGroup ? `Edit Group: ${editingGroup.name}` : "Manage Player Groups"}</DialogTitle>
               </DialogHeader>
 
               {editingGroup ? (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-200">
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-200 mt-4">
                   <form onSubmit={handleUpdateGroup} className="space-y-4">
                     <div className="flex gap-3 items-end">
                       <div className="space-y-2 flex-1">
-                        <label className="text-sm font-medium">Group Name</label>
-                        <Input value={editName} onChange={e => setEditName(e.target.value)} required />
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-60">Group Name</label>
+                        <Input value={editName} onChange={e => setEditName(e.target.value)} required className="rounded-xl bg-background/40 border-border/40 h-11" />
                       </div>
                       <div className="space-y-2 w-20">
-                        <label className="text-sm font-medium">Color</label>
-                        <Input type="color" className="p-1 h-10 w-full cursor-pointer" value={editColor} onChange={e => setEditColor(e.target.value)} />
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-60">Color</label>
+                        <Input type="color" className="p-1 h-11 w-full cursor-pointer rounded-xl bg-background/40 border-border/40" value={editColor} onChange={e => setEditColor(e.target.value)} />
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" className="flex-1" disabled={updatingGroup}>
+                    <div className="flex gap-3">
+                      <Button type="submit" className="flex-1 rounded-xl h-11 shadow-lg" disabled={updatingGroup}>
                         {updatingGroup ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                         Save Changes
                       </Button>
-                      <Button type="button" variant="outline" onClick={() => setEditingGroup(null)}>Cancel</Button>
+                      <Button type="button" variant="outline" className="rounded-xl h-11 border-border/40" onClick={() => setEditingGroup(null)}>Cancel</Button>
                     </div>
                   </form>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                         Group Members
-                        <Badge variant="secondary" className="text-[10px]">{groupedPlayers.get(editingGroup.id)?.length || 0}</Badge>
+                        <Badge variant="secondary" className="text-[10px] bg-white/5 rounded-md">{groupedPlayers.get(editingGroup.id)?.length || 0}</Badge>
                       </h4>
                     </div>
-                    <div className="border rounded-lg divide-y max-h-48 overflow-y-auto bg-muted/20">
+                    <div className="border border-white/5 rounded-xl divide-y divide-white/5 max-h-48 overflow-y-auto bg-white/5">
                       {groupedPlayers.get(editingGroup.id)?.length === 0 ? (
                         <div className="p-4 text-center text-xs text-muted-foreground">No members in this group.</div>
                       ) : (
                         groupedPlayers.get(editingGroup.id)?.map(player => (
-                          <div key={player.id} className="flex items-center justify-between p-2 pl-3">
-                            <span className="text-sm font-medium truncate mr-2">{player.name}</span>
+                          <div key={player.id} className="flex items-center justify-between p-3 pl-4">
+                            <span className="text-sm font-semibold truncate mr-2">{player.name}</span>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-7 text-[10px] text-destructive hover:bg-destructive/10 px-2"
+                              className="h-8 text-[10px] font-bold uppercase tracking-widest text-destructive hover:bg-destructive/10 px-3 rounded-lg"
                               onClick={() => handleAssignGroup(player.id, null)}
                               disabled={assigningGroupId === player.id}
                             >
@@ -637,49 +640,49 @@ export default function PlayersPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-200">
+                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-200 mt-4">
                   <form onSubmit={handleCreateGroup} className="flex gap-3 items-end">
                     <div className="space-y-2 flex-1">
-                      <label className="text-sm font-medium">New Group Name</label>
-                      <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="e.g. Clan Enemies" required />
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-60">New Group Name</label>
+                      <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="e.g. Clan Enemies" required className="rounded-xl bg-background/40 border-border/40 h-11" />
                     </div>
                     <div className="space-y-2 w-20">
-                      <label className="text-sm font-medium">Color</label>
-                      <Input type="color" className="p-1 h-10 w-full cursor-pointer" value={newGroupColor} onChange={e => setNewGroupColor(e.target.value)} />
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-60">Color</label>
+                      <Input type="color" className="p-1 h-11 w-full cursor-pointer rounded-xl bg-background/40 border-border/40" value={newGroupColor} onChange={e => setNewGroupColor(e.target.value)} />
                     </div>
-                    <Button type="submit" disabled={creatingGroup}>
-                      {creatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    <Button type="submit" size="lg" className="rounded-xl h-11 w-11 p-0 shadow-lg" disabled={creatingGroup}>
+                      {creatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-5 w-5" />}
                     </Button>
                   </form>
 
-                  <div className="border rounded-md divide-y max-h-64 overflow-y-auto">
+                  <div className="border border-white/5 rounded-xl divide-y divide-white/5 max-h-64 overflow-y-auto bg-white/5">
                     {groups.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-muted-foreground">No groups created yet.</div>
+                      <div className="p-6 text-center text-sm text-muted-foreground opacity-60 italic">No groups created yet.</div>
                     ) : (
                       groups.map(group => (
-                        <div key={group.id} className="flex items-center justify-between p-3 bg-card hover:bg-muted/10 transition-colors">
+                        <div key={group.id} className="flex items-center justify-between p-4 bg-transparent hover:bg-white/5 transition-colors">
                           <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
-                            <span className="font-medium text-sm">{group.name}</span>
-                            <Badge variant="secondary" className="text-[10px]">{group._count?.players || 0}</Badge>
+                            <div className="w-4 h-4 rounded-full shadow-sm" style={{ backgroundColor: group.color || '#ccc' }} />
+                            <span className="font-bold text-sm">{group.name}</span>
+                            <Badge variant="secondary" className="text-[10px] font-bold bg-white/5 rounded-md">{group._count?.players || 0}</Badge>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 rounded-lg hover:bg-white/10"
                               onClick={() => {
                                 setEditingGroup(group);
                                 setEditName(group.name);
                                 setEditColor(group.color || "#3b82f6");
                               }}
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                              className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0 rounded-lg"
                               onClick={() => handleDeleteGroup(group.id)}
                               disabled={deletingGroupId === group.id}
                             >
@@ -695,42 +698,50 @@ export default function PlayersPage() {
             </DialogContent>
           </Dialog>
 
-          <Button onClick={() => setShowAddForm((value) => !value)}>
-            {showAddForm ? "Cancel" : "Add Player Manually"}
+          <Button 
+            variant="outline"
+            className="rounded-xl border-border/40 hover:bg-white/5"
+            onClick={() => setShowAddForm((value) => !value)}
+          >
+            {showAddForm ? <X className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+            {showAddForm ? "Cancel" : "Add Player"}
           </Button>
         </div>
       </div>
 
       {showAddForm && (
-        <Card>
+        <Card className="glass-card border-none shadow-none overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-sm">Manually Add Player</CardTitle>
+            <CardTitle className="text-xl font-bold">Manually Add Player</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddPlayer} className="flex gap-4 items-end">
-              <div className="space-y-2 flex-1">
-                <label className="text-sm font-medium">Player ID (BattleMetrics)</label>
-                <Input value={newPlayerId} onChange={e => setNewPlayerId(e.target.value)} placeholder="e.g. 1234567" />
+            <form onSubmit={handleAddPlayer} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Player ID (BattleMetrics)</label>
+                <Input 
+                  value={newPlayerId} 
+                  onChange={e => setNewPlayerId(e.target.value)} 
+                  placeholder="e.g. 1234567" 
+                  className="rounded-xl bg-background/40 border-border/40 h-11"
+                />
               </div>
-              <div className="space-y-2 flex-1">
-                <label className="text-sm font-medium">Target Server</label>
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Target Server</label>
                 <Select
                   value={newPlayerServer}
                   onValueChange={(v) => v && setNewPlayerServer(v)}
                 >
-                  <SelectTrigger className="w-full h-10">
-                    <span data-slot="select-value" className="flex flex-1 text-left line-clamp-1">
-                      {getServerName(newPlayerServer)}
-                    </span>
+                  <SelectTrigger className="w-full h-11 rounded-xl bg-background/40 border-border/40">
+                    <SelectValue placeholder="Select server" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl glass-panel border-white/5">
                     {servers.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      <SelectItem key={s.id} value={s.id} className="rounded-lg">{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" disabled={adding || !newPlayerId || !newPlayerServer}>
+              <Button type="submit" size="lg" className="rounded-xl h-11 shadow-lg" disabled={adding || !newPlayerId || !newPlayerServer}>
                 {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Track Player
               </Button>
@@ -739,17 +750,20 @@ export default function PlayersPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users size={18} className="text-primary" /> Player Directory
+      <Card className="glass-card border-none shadow-none overflow-hidden">
+        <CardHeader className="pb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="rounded-xl bg-primary/10 p-2.5">
+                <Users size={20} className="text-primary" />
+              </div>
+              Player Directory
             </CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name..."
-                className="pl-9"
+                className="pl-10 h-11 rounded-xl bg-background/40 border-border/40 focus:bg-background/60 transition-all"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -762,16 +776,16 @@ export default function PlayersPage() {
         <CardContent>
           <div className="relative">
             {loading && (
-              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-md">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="absolute inset-0 bg-background/30 backdrop-blur-md z-10 flex items-center justify-center rounded-2xl">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
               </div>
             )}
             
             {/* Desktop View */}
-            <div className="rounded-md border hidden md:block">
+            <div className="rounded-2xl border border-white/5 overflow-hidden hidden md:block">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="bg-white/5">
+                  <TableRow className="border-border/40 hover:bg-transparent">
                     <SortableHead
                       label="Status"
                       sortKey="status"
@@ -807,16 +821,19 @@ export default function PlayersPage() {
                       sortDir={sortDir}
                       onToggle={toggleSort}
                     />
-                    <TableHead>Group</TableHead>
-                    <TableHead>Rust+ Alerts</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead className="py-4 text-xs font-bold uppercase tracking-widest">Group</TableHead>
+                    <TableHead className="py-4 text-xs font-bold uppercase tracking-widest">Rust+ Alerts</TableHead>
+                    <TableHead className="py-4 text-xs font-bold uppercase tracking-widest"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {players.length === 0 && !loading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                        No players found.
+                      <TableCell colSpan={8} className="h-40 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center gap-3">
+                          <Users size={40} className="opacity-10" />
+                          <p>No players found.</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -829,15 +846,15 @@ export default function PlayersPage() {
                         return (
                           <Fragment key={group.id}>
                             <TableRow 
-                              className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                              className="bg-white/5 hover:bg-white/10 cursor-pointer border-border/40"
                               onClick={() => toggleGroupExpand(group.id)}
                             >
-                              <TableCell colSpan={8} className="py-2">
-                                <div className="flex items-center gap-2 font-medium">
+                              <TableCell colSpan={8} className="py-3">
+                                <div className="flex items-center gap-3 font-bold text-xs uppercase tracking-wider">
                                   <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: group.color || '#ccc' }} />
+                                  <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: group.color || '#ccc' }} />
                                   {group.name}
-                                  <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupPlayers.length}</Badge>
+                                  <Badge variant="secondary" className="ml-2 font-bold text-[10px] bg-white/5 rounded-md">{groupPlayers.length}</Badge>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -850,14 +867,14 @@ export default function PlayersPage() {
                       {(groupedPlayers.get("ungrouped")?.length ?? 0) > 0 && (
                         <Fragment key="ungrouped">
                           <TableRow 
-                            className="bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                            className="bg-white/5 hover:bg-white/10 cursor-pointer border-border/40"
                             onClick={() => toggleGroupExpand("ungrouped")}
                           >
-                            <TableCell colSpan={8} className="py-2">
-                              <div className="flex items-center gap-2 font-medium text-muted-foreground">
+                            <TableCell colSpan={8} className="py-3">
+                              <div className="flex items-center gap-3 font-bold text-xs uppercase tracking-wider text-muted-foreground">
                                 <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
                                 Ungrouped
-                                <Badge variant="secondary" className="ml-2 font-normal text-xs">{groupedPlayers.get("ungrouped")?.length}</Badge>
+                                <Badge variant="secondary" className="ml-2 font-bold text-[10px] bg-white/5 rounded-md">{groupedPlayers.get("ungrouped")?.length}</Badge>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -873,8 +890,9 @@ export default function PlayersPage() {
             {/* Mobile View */}
             <div className="grid gap-4 md:hidden">
               {players.length === 0 && !loading ? (
-                <div className="h-24 flex items-center justify-center text-muted-foreground border rounded-md">
-                  No players found.
+                <div className="h-40 flex flex-col items-center justify-center text-muted-foreground border-2 border-dashed border-border/40 rounded-2xl gap-3">
+                  <Users size={32} className="opacity-10" />
+                  <p className="text-sm">No players found.</p>
                 </div>
               ) : (
                 <>
@@ -886,13 +904,13 @@ export default function PlayersPage() {
                     return (
                       <div key={group.id} className="space-y-3">
                         <div 
-                          className="flex items-center gap-2 font-medium bg-muted/30 p-3 rounded-lg border cursor-pointer active:bg-muted/50 transition-colors"
+                          className="flex items-center gap-3 font-bold text-xs uppercase tracking-wider bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer active:bg-white/10 transition-colors"
                           onClick={() => toggleGroupExpand(group.id)}
                         >
                           <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: group.color || '#ccc' }} />
+                          <div className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: group.color || '#ccc' }} />
                           <span className="truncate">{group.name}</span>
-                          <Badge variant="secondary" className="ml-auto font-normal text-xs">{groupPlayers.length}</Badge>
+                          <Badge variant="secondary" className="ml-auto font-bold text-[10px] bg-white/10 rounded-md">{groupPlayers.length}</Badge>
                         </div>
                         {isExpanded && <div className="grid gap-3">{groupPlayers.map(renderPlayerCard)}</div>}
                       </div>
@@ -902,12 +920,12 @@ export default function PlayersPage() {
                   {(groupedPlayers.get("ungrouped")?.length ?? 0) > 0 && (
                     <div className="space-y-3">
                       <div 
-                        className="flex items-center gap-2 font-medium text-muted-foreground bg-muted/30 p-3 rounded-lg border cursor-pointer active:bg-muted/50 transition-colors"
+                        className="flex items-center gap-3 font-bold text-xs uppercase tracking-wider text-muted-foreground bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer active:bg-white/10 transition-colors"
                         onClick={() => toggleGroupExpand("ungrouped")}
                       >
                         <ChevronDown className={`h-4 w-4 transition-transform ${expandedGroups["ungrouped"] !== false ? '' : '-rotate-90'}`} />
                         <span className="truncate">Ungrouped</span>
-                        <Badge variant="secondary" className="ml-auto font-normal text-xs">{groupedPlayers.get("ungrouped")?.length}</Badge>
+                        <Badge variant="secondary" className="ml-auto font-bold text-[10px] bg-white/10 rounded-md">{groupedPlayers.get("ungrouped")?.length}</Badge>
                       </div>
                       {expandedGroups["ungrouped"] !== false && <div className="grid gap-3">{groupedPlayers.get("ungrouped")?.map(renderPlayerCard)}</div>}
                     </div>
@@ -916,14 +934,15 @@ export default function PlayersPage() {
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {players.length} of {total} players
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-8 gap-4">
+            <p className="text-sm text-muted-foreground font-medium">
+              Showing <span className="text-foreground">{players.length}</span> of <span className="text-foreground">{total}</span> players
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 size="sm"
+                className="rounded-xl px-5 border-border/40 hover:bg-white/5"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
@@ -932,6 +951,7 @@ export default function PlayersPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="rounded-xl px-5 border-border/40 hover:bg-white/5"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={players.length < 50}
               >

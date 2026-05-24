@@ -216,3 +216,24 @@
 
 /* ─── Misc ───────────────────────────────────────────────────────────────────── */
 a { text-decoration: none; color: inherit; }
+
+/* ─── Glassmorphism Utilities (Tailwind v4 compatible) ────────────────────────── */
+@utility glass-card {
+  background: rgba(30, 27, 46, 0.45);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+@utility glass-panel {
+  background: rgba(18, 16, 26, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+@utility glass-glow-orange {
+  box-shadow: 0 0 40px 4px rgba(240, 110, 50, 0.12),
+              inset 0 0 12px rgba(240, 110, 50, 0.05);
+}
