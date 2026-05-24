@@ -49,4 +49,4 @@ ENV HOSTNAME "0.0.0.0"
 
 # Use a more resilient startup command. 
 # We run prisma push in the background so it doesn't block Render's port detection.
-CMD ["sh", "-c", "npx prisma db push & npm start"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss & npm start"]
