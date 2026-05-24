@@ -588,6 +588,25 @@ export default function ServersPage() {
                 {showManualConfig && (
                   <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
                     <div className="space-y-2">
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold opacity-60">Command String</p>
+                      <Input
+                        className="rounded-xl border-border/40 bg-background/40 h-10 text-xs font-mono"
+                        placeholder="/credentials add gcm_android_id:..."
+                        value={credentialsCommand}
+                        onChange={(e) => setCredentialsCommand(e.target.value)}
+                      />
+                      <Button 
+                        className="w-full rounded-xl"
+                        variant="secondary"
+                        size="sm"
+                        disabled={startingPairing || !credentialsCommand.trim()}
+                        onClick={() => void startPairingListenerWithCredentials(credentialsCommand.trim())}
+                      >
+                        Start with Command
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold opacity-60">Credentials JSON</p>
                       <textarea
                         className="w-full min-h-[100px] rounded-xl border border-border/40 bg-background/40 px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:opacity-50"
