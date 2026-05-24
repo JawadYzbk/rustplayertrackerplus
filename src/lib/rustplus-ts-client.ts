@@ -6,7 +6,7 @@ export class RustPlusTS extends RustPlus {
   websocket: any;
   AppRequest: any;
   AppMessage: any;
-  seqCallbacks: Map<number, (res: any) => boolean | void>;
+  seqCallbacks: any[];
   reconnectAttempts: number = 0;
   maxReconnectDelay: number = 30000;
   isExplicitlyClosed: boolean = false;
@@ -19,7 +19,7 @@ export class RustPlusTS extends RustPlus {
     useFacepunchProxy = false
   ) {
     super(server, port, playerId, playerToken, useFacepunchProxy);
-    this.seqCallbacks = new Map();
+    this.seqCallbacks = [];
   }
 
   override disconnect(): void {
@@ -76,16 +76,16 @@ export class RustPlusTS extends RustPlus {
         if (
           message.response &&
           message.response.seq &&
-          this.seqCallbacks.has(message.response.seq)
+          this.seqCallbacks[message.response.seq]
         ) {
           // get the callback for the response sequence
-          const callback = this.seqCallbacks.get(message.response.seq)!;
+          const callback = this.seqCallbacks[message.response.seq];
 
           // call the callback with the response message
           const result = callback(message);
 
           // remove the callback
-          this.seqCallbacks.delete(message.response.seq);
+          delete this.seqCallbacks[message.response.seq];
 
           // if callback returns true, don't fire message event
           if (result) {
