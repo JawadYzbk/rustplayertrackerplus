@@ -150,13 +150,13 @@ export default function PlayerAnalyticsPage({
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-32 w-full rounded-xl" />
+      <div className="mx-auto max-w-6xl space-y-6 pt-10">
+        <Skeleton className="h-8 w-32 rounded-xl" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
         <div className="grid grid-cols-3 gap-6">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
         </div>
       </div>
     );
@@ -165,11 +165,11 @@ export default function PlayerAnalyticsPage({
   if (!player || !analytics) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center">
-        <Users className="mb-4 h-16 w-16 text-muted-foreground opacity-20" />
-        <h2 className="text-xl font-bold">Player not found</h2>
+        <Users className="mb-4 h-16 w-16 text-muted-foreground opacity-15 text-primary animate-bounce" />
+        <h2 className="text-xl font-bold font-heading">Player profile index empty</h2>
         <Link href="/players">
-          <Button variant="outline" className="mt-4">
-            Return to Players
+          <Button variant="outline" className="mt-4 rounded-xl border-white/10">
+            Return to Directory
           </Button>
         </Link>
       </div>
@@ -191,37 +191,40 @@ export default function PlayerAnalyticsPage({
 
   return (
     <div className="mx-auto max-w-7xl space-y-10 pb-12">
+      {/* Back button */}
       <div>
         <Link
           href="/players"
-          className="group mb-6 inline-flex items-center text-sm font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-primary"
+          className="group mb-6 inline-flex items-center text-xs font-bold uppercase tracking-widest text-muted-foreground transition-all hover:text-foreground"
         >
-          <div className="mr-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 transition-colors group-hover:bg-primary/10">
-            <ChevronLeft className="h-4 w-4" />
+          <div className="mr-2.5 flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-950/20 border border-white/5 transition-all group-hover:border-primary/20 group-hover:bg-primary/5">
+            <ChevronLeft className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
           Back to directory
         </Link>
 
-        <div className="glass-card flex flex-col justify-between gap-8 rounded-3xl border-none p-8 shadow-none md:flex-row md:items-center">
+        {/* User Dashboard Profile Banner */}
+        <div className="glass-card glass-card-hover flex flex-col justify-between gap-8 rounded-3xl border-none p-8 shadow-none md:flex-row md:items-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 h-40 w-40 bg-primary/5 rounded-full blur-3xl" />
           <div className="flex items-center gap-6">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/30 bg-primary/20 text-3xl font-black uppercase text-primary shadow-lg shadow-primary/20">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-3xl font-black uppercase text-primary shadow-lg shadow-primary/10 font-heading shrink-0">
               {player.name.substring(0, 2)}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">{player.name}</h1>
+                <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl font-heading">{player.name}</h1>
                 {isOnline ? (
-                  <Badge className="h-7 gap-2 rounded-lg bg-green-500/10 px-3 text-[10px] font-black uppercase tracking-widest text-green-500 hover:bg-green-500/20 border-none">
+                  <Badge className="h-7 gap-2 rounded-lg bg-green-500/10 px-3 text-[9px] font-extrabold uppercase tracking-widest text-green-400 hover:bg-green-500/20 border border-green-500/25">
                     <span className="pulse-dot" />
                     Online
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="h-7 rounded-lg bg-white/5 px-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 border-none">
+                  <Badge variant="secondary" className="h-7 rounded-lg bg-white/5 px-3 text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground/60 border border-white/5">
                     Offline
                   </Badge>
                 )}
               </div>
-              <div className="mt-2.5 flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground/60">
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground/60">
                 <p className="flex items-center gap-2">
                   <Server className="h-4 w-4 text-primary/60" />
                   {player.server.name}
@@ -235,28 +238,28 @@ export default function PlayerAnalyticsPage({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-8 md:text-right">
+          <div className="flex flex-wrap gap-8 md:text-right shrink-0">
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-                Last 24h
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 font-heading">
+                Last 24 Hours
               </p>
-              <p className="text-3xl font-black text-primary">
+              <p className="text-3xl font-black text-primary font-heading">
                 {formatHours(analytics.summary.last24h)}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-                Last 7d
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 font-heading">
+                Last 7 Days
               </p>
-              <p className="text-3xl font-black text-foreground">
+              <p className="text-3xl font-black text-foreground font-heading">
                 {formatHours(analytics.summary.last7d)}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-                Avg Session
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 font-heading">
+                Average Session
               </p>
-              <p className="text-3xl font-black text-foreground">
+              <p className="text-3xl font-black text-foreground font-heading">
                 {formatMin(analytics.insights.avgSessionLength)}
               </p>
             </div>
@@ -264,29 +267,32 @@ export default function PlayerAnalyticsPage({
         </div>
       </div>
 
+      {/* Tabs Layout */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-8 h-12 w-full justify-start gap-2 bg-transparent p-0 sm:w-auto">
-          <TabsTrigger value="overview" className="rounded-xl px-6 font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Overview</TabsTrigger>
-          <TabsTrigger value="forecast" className="rounded-xl px-6 font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Forecast</TabsTrigger>
-          <TabsTrigger value="sessions" className="rounded-xl px-6 font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Sessions</TabsTrigger>
+          <TabsTrigger value="overview" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Overview</TabsTrigger>
+          <TabsTrigger value="forecast" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Forecast</TabsTrigger>
+          <TabsTrigger value="sessions" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Sessions</TabsTrigger>
         </TabsList>
 
+        {/* OVERVIEW CONTENT */}
         <TabsContent value="overview" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="glass-card border-none shadow-none overflow-hidden lg:col-span-2">
+            {/* Playtime Heatmap */}
+            <Card className="glass-card border-none shadow-none overflow-hidden lg:col-span-2 flex flex-col justify-between">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-3 text-xl font-bold">
-                  <div className="rounded-xl bg-primary/10 p-2">
-                    <Activity className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                  <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                    <Activity className="h-4.5 w-4.5 text-primary" />
                   </div>
-                  Activity Heatmap
+                  Activity Distribution
                 </CardTitle>
-                <CardDescription className="text-sm font-medium opacity-60">
+                <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
                   Hourly playtime distribution over the last 24 hours.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="flex h-40 items-end gap-1 sm:gap-1.5 px-2">
+                <div className="flex h-44 items-end gap-1.5 px-2">
                   {Array.from({ length: 24 }).map((_, hour) => {
                     const hourData = analytics.hourly.find((item) => item.hour === hour);
                     const totalTimeSec = hourData ? hourData.totalTimeSec : 0;
@@ -300,19 +306,19 @@ export default function PlayerAnalyticsPage({
                         <div
                           className={`w-full rounded-t-lg transition-all duration-300 group-hover:brightness-125 ${
                             totalTimeSec > 0
-                              ? "bg-primary shadow-[0_0_15px_rgba(240,110,50,0.2)]"
+                              ? "bg-primary shadow-[0_0_15px_rgba(240,110,50,0.25)]"
                               : "bg-white/5 group-hover:bg-white/10"
                           }`}
                           style={{ height: `${height}%` }}
                         />
-                        <div className="pointer-events-none absolute -top-12 z-50 rounded-xl glass-panel border-white/10 p-2.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-foreground opacity-0 shadow-2xl transition-all group-hover:-top-14 group-hover:opacity-100">
+                        <div className="pointer-events-none absolute -top-12 z-50 rounded-xl glass-panel border border-white/5 p-2.5 text-[9px] font-mono font-bold uppercase tracking-wider whitespace-nowrap text-foreground opacity-0 shadow-2xl transition-all group-hover:-top-14 group-hover:opacity-100">
                           <span className="text-primary">{hour}:00</span> <span className="mx-2 opacity-30">•</span> {formatHours(totalTimeSec)}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-6 flex justify-between font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 px-2">
+                <div className="mt-6 flex justify-between font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 px-2">
                   <span>00:00</span>
                   <span>06:00</span>
                   <span>12:00</span>
@@ -322,39 +328,40 @@ export default function PlayerAnalyticsPage({
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-none shadow-none overflow-hidden">
+            {/* Insights Panel */}
+            <Card className="glass-card border-none shadow-none overflow-hidden flex flex-col justify-between">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold">Insights</CardTitle>
-                <CardDescription className="text-sm font-medium opacity-60">
+                <CardTitle className="text-xl font-bold font-heading">Insights</CardTitle>
+                <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80">
                   Behavioral pattern analysis.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Peak Activity (UTC)</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">Peak Activity (UTC)</p>
                   <div className="flex flex-wrap gap-2">
                     {analytics.insights.peakHours.map((hour) => (
-                      <Badge key={hour} variant="secondary" className="rounded-lg bg-primary/10 text-primary border-none px-3 font-bold">
+                      <Badge key={hour} variant="secondary" className="rounded-lg bg-primary/10 text-primary border border-primary/20 px-3 py-0.5 font-bold">
                         {hour}:00
                       </Badge>
                     ))}
-                    {analytics.insights.peakHours.length === 0 && <span className="text-sm opacity-40 italic">Not enough data</span>}
+                    {analytics.insights.peakHours.length === 0 && <span className="text-xs font-semibold opacity-40 italic">Not enough data</span>}
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Dead Hours (UTC)</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">Dead Hours (UTC)</p>
                   <div className="flex flex-wrap gap-2">
                     {analytics.insights.deadHours.map((hour) => (
-                      <Badge key={hour} variant="outline" className="rounded-lg border-white/5 text-muted-foreground/60 px-3 font-bold">
+                      <Badge key={hour} variant="outline" className="rounded-lg border-white/10 text-muted-foreground/60 px-3 py-0.5 font-bold">
                         {hour}:00
                       </Badge>
                     ))}
-                    {analytics.insights.deadHours.length === 0 && <span className="text-sm opacity-40 italic">Rarely offline</span>}
+                    {analytics.insights.deadHours.length === 0 && <span className="text-xs font-semibold opacity-40 italic">Rarely offline</span>}
                   </div>
                 </div>
-                <div className="pt-4 border-t border-white/5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-1">Last Seen</p>
-                  <p className="text-sm font-bold text-foreground/80">
+                <div className="pt-5 border-t border-white/5">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">Last Seen active</p>
+                  <p className="text-xs font-bold text-foreground/80 font-mono">
                     {new Date(player.lastSeen).toLocaleString()}
                   </p>
                 </div>
@@ -362,19 +369,26 @@ export default function PlayerAnalyticsPage({
             </Card>
           </div>
 
+          {/* Weekly Trend Chart */}
           <Card className="glass-card border-none shadow-none overflow-hidden">
             <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold">
-                <div className="rounded-xl bg-primary/10 p-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
+              <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                  <BarChart3 className="h-4.5 w-4.5 text-primary" />
                 </div>
-                Weekly Trend
+                Weekly play trend
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] w-full pt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyChartData}>
+                    <defs>
+                      <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
+                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.15} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
                     <XAxis 
                       dataKey="name" 
@@ -390,19 +404,19 @@ export default function PlayerAnalyticsPage({
                       tickFormatter={(value) => `${value}h`}
                     />
                     <Tooltip
-                      cursor={{ fill: "rgba(255,255,255,0.03)", radius: 8 }}
+                      cursor={{ fill: "rgba(255,255,255,0.02)", radius: 8 }}
                       contentStyle={{
-                        backgroundColor: "rgba(20, 18, 30, 0.9)",
+                        backgroundColor: "rgba(10, 8, 16, 0.9)",
                         backdropFilter: "blur(12px)",
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.08)",
                         borderRadius: "16px",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                        boxShadow: "0 15px 35px rgba(0,0,0,0.6)",
                         padding: "12px 16px"
                       }}
                       itemStyle={{ color: "var(--primary)", fontWeight: 800, fontSize: '12px' }}
-                      labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: '4px', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                      labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: '4px', fontWeight: 750, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                     />
-                    <Bar dataKey="hours" fill="var(--primary)" radius={[6, 6, 2, 2]} barSize={40} />
+                    <Bar dataKey="hours" fill="url(#barGrad)" radius={[6, 6, 2, 2]} barSize={36} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -410,24 +424,30 @@ export default function PlayerAnalyticsPage({
           </Card>
         </TabsContent>
 
+        {/* FORECAST CONTENT */}
         <TabsContent value="forecast" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className="glass-card border-none shadow-none overflow-hidden">
             <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold">
-                <div className="rounded-xl bg-primary/10 p-2">
-                  <Activity className="h-5 w-5 text-primary" />
+              <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                  <Activity className="h-4.5 w-4.5 text-primary" />
                 </div>
-                Intelligence Forecast
+                Intelligence Forecast Radar
               </CardTitle>
-              <CardDescription className="text-sm font-medium opacity-60">
-                Probability of the player being online at any given hour based
-                on recency-weighted historical data.
+              <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
+                Probability of the player being online at any given hour based on recency-weighted historical session analysis.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[350px] w-full pt-6">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={forecastChartData}>
+                    <defs>
+                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
                     <XAxis 
                       dataKey="hour" 
@@ -444,11 +464,11 @@ export default function PlayerAnalyticsPage({
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "rgba(20, 18, 30, 0.9)",
+                        backgroundColor: "rgba(10, 8, 16, 0.9)",
                         backdropFilter: "blur(12px)",
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.08)",
                         borderRadius: "16px",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                        boxShadow: "0 15px 35px rgba(0,0,0,0.6)",
                         padding: "12px 16px"
                       }}
                       formatter={(value) => {
@@ -456,7 +476,7 @@ export default function PlayerAnalyticsPage({
                         return [`${displayValue ?? 0}%`, "Online Probability"];
                       }}
                       itemStyle={{ color: "var(--primary)", fontWeight: 800, fontSize: '12px' }}
-                      labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: '4px', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                      labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: '4px', fontWeight: 750, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                     />
                     <Line
                       type="monotone"
@@ -473,47 +493,49 @@ export default function PlayerAnalyticsPage({
           </Card>
         </TabsContent>
 
+        {/* SESSIONS CONTENT */}
         <TabsContent value="sessions" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className="glass-card border-none shadow-none overflow-hidden">
             <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold">
-                <div className="rounded-xl bg-primary/10 p-2">
-                  <Clock className="h-5 w-5 text-primary" />
+              <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                  <Clock className="h-4.5 w-4.5 text-primary" />
                 </div>
-                Historical Sessions
+                Session logs archive
               </CardTitle>
-              <CardDescription className="text-sm font-medium opacity-60">
-                Recent activity logs for this player.
+              <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
+                Recent historical captures of player activity inside monitored worlds.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {sessions.length === 0 ? (
-                  <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
-                    <Clock className="mx-auto h-12 w-12 opacity-10 mb-4" />
-                    <p className="text-sm text-muted-foreground font-medium italic">No recent sessions found.</p>
+                  <div className="py-20 text-center border border-dashed border-white/5 rounded-2xl bg-zinc-950/20">
+                    <Clock className="mx-auto h-12 w-12 opacity-15 mb-4 text-primary" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-70 italic">No recent sessions discovered.</p>
                   </div>
                 ) : (
                   sessions.map((session) => (
                     <div
                       key={session.id}
-                      className="group flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10"
+                      className="group flex items-center justify-between rounded-2xl border border-white/5 bg-zinc-950/20 p-5 transition-all duration-300 hover:bg-zinc-950/45 hover:border-primary/20"
                     >
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-foreground/90">
+                        <p className="text-sm font-bold text-foreground/90 font-mono">
                           {new Date(session.joinedAt).toLocaleString()}
                         </p>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
                           {session.leftAt
                             ? `Disconnected at ${new Date(session.leftAt).toLocaleTimeString()}`
-                            : "Session still active"}
+                            : "Active sandbox session"}
                         </p>
                       </div>
                       <div className="text-right">
                         <Badge
                           variant={session.durationSec === null ? "default" : "secondary"}
-                          className={`rounded-lg px-3 py-1 font-black text-[10px] uppercase tracking-widest border-none ${session.durationSec === null ? 'bg-green-500 text-white animate-pulse' : 'bg-white/10 text-muted-foreground'}`}
+                          className={`rounded-lg px-3 py-1 font-bold text-[9px] uppercase tracking-widest border border-white/5 ${session.durationSec === null ? 'bg-green-500/10 text-green-400 border-green-500/25 animate-pulse' : 'bg-white/5 text-muted-foreground/80'}`}
                         >
+                          {session.durationSec === null && <span className="pulse-dot mr-1.5" />}
                           {formatDuration(session.durationSec)}
                         </Badge>
                       </div>
