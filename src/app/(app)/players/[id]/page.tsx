@@ -10,6 +10,7 @@ import {
   Calendar,
   Check,
   ChevronLeft,
+  ChevronRight,
   Clock,
   RefreshCw,
   Server,
@@ -38,6 +39,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AnalyticsSummary {
   last24h: number;
@@ -179,6 +185,60 @@ export default function PlayerAnalyticsPage({
     const eParts = customEnd.split("-").map(Number);
     filterEnd = new Date(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999);
   }
+
+  const customStartDate = (() => {
+    const parts = customStart.split("-").map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  })();
+
+  const customEndDate = (() => {
+    const parts = customEnd.split("-").map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  })();
+
+  const selectedRange: DateRange = {
+    from: customStartDate,
+    to: customEndDate,
+  };
+
+  const formatDateToString = (date: Date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const handleRangeSelect = (range: DateRange | undefined) => {
+    if (range?.from) {
+      setCustomStart(formatDateToString(range.from));
+    }
+    if (range?.to) {
+      setCustomEnd(formatDateToString(range.to));
+    }
+  };
+
+  const shiftRange = (direction: "prev" | "next") => {
+    let durationDays = 7;
+    if (dateFilter === "7d") durationDays = 7;
+    else if (dateFilter === "14d") durationDays = 14;
+    else if (dateFilter === "30d") durationDays = 30;
+    else if (dateFilter === "custom") {
+      const diffTime = Math.abs(customEndDate.getTime() - customStartDate.getTime());
+      durationDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    }
+    
+    const shift = direction === "prev" ? -durationDays : durationDays;
+    
+    const start = new Date(filterStart);
+    start.setDate(start.getDate() + shift);
+    
+    const end = new Date(filterEnd);
+    end.setDate(end.getDate() + shift);
+    
+    setDateFilter("custom");
+    setCustomStart(formatDateToString(start));
+    setCustomEnd(formatDateToString(end));
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -506,35 +566,64 @@ export default function PlayerAnalyticsPage({
               </div>
 
               {/* Date Filter Controls */}
-              <div className="flex flex-wrap items-center gap-3">
-                <select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="bg-zinc-950/40 border border-white/5 hover:border-white/10 rounded-xl px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
+              <div className="flex flex-wrap items-center gap-2 bg-zinc-950/20 border border-white/5 p-1 rounded-xl shadow-md">
+                {/* Previous button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => shiftRange("prev")}
+                  className="h-8 w-8 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-primary transition-all cursor-pointer"
                 >
-                  <option value="7d">Last 7 Days</option>
-                  <option value="14d">Last 14 Days</option>
-                  <option value="30d">Last 30 Days</option>
-                  <option value="custom">Custom Range</option>
-                </select>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
 
+                {/* Dropdown Select */}
+                <Select value={dateFilter} onValueChange={(val) => val && setDateFilter(val)}>
+                  <SelectTrigger className="h-8 rounded-lg border-white/5 bg-zinc-950/40 hover:bg-zinc-900/40 text-xs font-bold cursor-pointer">
+                    <SelectValue placeholder="Select Range" />
+                  </SelectTrigger>
+                  <SelectContent className="border border-white/10 bg-zinc-950 shadow-2xl rounded-xl">
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                    <SelectItem value="14d">Last 14 Days</SelectItem>
+                    <SelectItem value="30d">Last 30 Days</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Custom Range Picker */}
                 {dateFilter === "custom" && (
-                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
-                    <input
-                      type="date"
-                      value={customStart}
-                      onChange={(e) => setCustomStart(e.target.value)}
-                      className="bg-zinc-950/40 border border-white/5 rounded-xl px-3 py-1 text-xs text-foreground focus:outline-none focus:border-primary/50 font-mono"
-                    />
-                    <span className="text-xs font-bold text-muted-foreground/50">to</span>
-                    <input
-                      type="date"
-                      value={customEnd}
-                      onChange={(e) => setCustomEnd(e.target.value)}
-                      className="bg-zinc-950/40 border border-white/5 rounded-xl px-3 py-1 text-xs text-foreground focus:outline-none focus:border-primary/50 font-mono"
-                    />
-                  </div>
+                  <Popover>
+                    <PopoverTrigger className="h-8 gap-2 inline-flex items-center justify-center rounded-lg border border-white/5 bg-zinc-950/40 hover:bg-zinc-900/40 text-xs font-semibold px-3 cursor-pointer select-none transition-colors">
+                      <Calendar className="h-3.5 w-3.5 opacity-60 text-primary" />
+                      {customStart && customEnd ? (
+                        <>
+                          {format(customStartDate, "MMM dd, yyyy")} - {format(customEndDate, "MMM dd, yyyy")}
+                        </>
+                      ) : (
+                        <span>Pick range</span>
+                      )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 border border-white/10 bg-zinc-950 shadow-2xl rounded-2xl" align="end">
+                      <ShadcnCalendar
+                        mode="range"
+                        defaultMonth={customStartDate}
+                        selected={selectedRange}
+                        onSelect={handleRangeSelect}
+                        numberOfMonths={1}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 )}
+
+                {/* Next button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => shiftRange("next")}
+                  className="h-8 w-8 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-primary transition-all cursor-pointer"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
