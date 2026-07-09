@@ -81,6 +81,7 @@ model Player {
   lastSeen  DateTime
   isTracking Boolean  @default(true)
   rustPlusNotifications Boolean @default(false)
+  bmSynced Boolean @default(false)
 
   user        AppUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
   server      Server            @relation(fields: [userId, serverId], references: [userId, id], onDelete: Cascade)

@@ -5,10 +5,13 @@ import axios from "axios";
 import Link from "next/link";
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   Calendar,
+  Check,
   ChevronLeft,
   Clock,
+  RefreshCw,
   Server,
   Users,
 } from "lucide-react";
@@ -34,6 +37,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface AnalyticsSummary {
   last24h: number;
@@ -70,6 +74,7 @@ interface Player {
   server: { name: string };
   firstSeen: string;
   lastSeen: string;
+  bmSynced: boolean;
 }
 
 interface AnalyticsResult {
@@ -116,20 +121,75 @@ export default function PlayerAnalyticsPage({
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(() => new Date().getTime());
 
+  const [dateFilter, setDateFilter] = useState<string>("7d");
+  const [customStart, setCustomStart] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().split("T")[0];
+  });
+  const [customEnd, setCustomEnd] = useState<string>(() => {
+    return new Date().toISOString().split("T")[0];
+  });
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await axios.post(`/api/players/${id}/sync`);
+      if (response.data.success) {
+        toast.success("Battlemetrics history synchronized successfully!");
+        setPlayer(prev => prev ? { ...prev, bmSynced: true } : null);
+        
+        const responseSessions = await axios.get("/api/sessions", {
+          params: {
+            playerId: id,
+            startDate: filterStart.toISOString(),
+            endDate: filterEnd.toISOString(),
+            limit: 1000,
+          },
+        });
+        setSessions(responseSessions.data.data);
+      } else {
+        toast.error(response.data.error || "Failed to synchronize history.");
+      }
+    } catch (error: any) {
+      console.error(error);
+      const errMsg = error.response?.data?.error || "Error connecting to server.";
+      toast.error(errMsg);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Compute filter start and end dates based on active filter options
+  let filterStart: Date;
+  let filterEnd = new Date(currentTime);
+
+  if (dateFilter === "7d") {
+    filterStart = new Date(currentTime - 6 * 24 * 60 * 60 * 1000);
+  } else if (dateFilter === "14d") {
+    filterStart = new Date(currentTime - 13 * 24 * 60 * 60 * 1000);
+  } else if (dateFilter === "30d") {
+    filterStart = new Date(currentTime - 29 * 24 * 60 * 60 * 1000);
+  } else {
+    const sParts = customStart.split("-").map(Number);
+    filterStart = new Date(sParts[0], sParts[1] - 1, sParts[2], 0, 0, 0, 0);
+
+    const eParts = customEnd.split("-").map(Number);
+    filterEnd = new Date(eParts[0], eParts[1] - 1, eParts[2], 23, 59, 59, 999);
+  }
+
   useEffect(() => {
     async function fetchData() {
       try {
         const timezoneOffsetMinutes = new Date().getTimezoneOffset();
-        const [analyticsResponse, sessionsResponse] = await Promise.all([
-          axios.get(`/api/players/${id}/analytics`, {
-            params: { timezoneOffsetMinutes },
-          }),
-          axios.get(`/api/sessions`, { params: { playerId: id, limit: 100 } }),
-        ]);
+        const analyticsResponse = await axios.get(`/api/players/${id}/analytics`, {
+          params: { timezoneOffsetMinutes },
+        });
 
         setPlayer(analyticsResponse.data.player);
         setAnalytics(analyticsResponse.data.analytics);
-        setSessions(sessionsResponse.data.data);
       } catch (error) {
         console.error(error);
       } finally {
@@ -139,6 +199,29 @@ export default function PlayerAnalyticsPage({
 
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    async function fetchFilteredSessions() {
+      setSessionsLoading(true);
+      try {
+        const response = await axios.get("/api/sessions", {
+          params: {
+            playerId: id,
+            startDate: filterStart.toISOString(),
+            endDate: filterEnd.toISOString(),
+            limit: 1000,
+          },
+        });
+        setSessions(response.data.data);
+      } catch (error) {
+        console.error("Failed to fetch sessions for date filter:", error);
+      } finally {
+        setSessionsLoading(false);
+      }
+    }
+
+    fetchFilteredSessions();
+  }, [id, dateFilter, customStart, customEnd]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -174,6 +257,20 @@ export default function PlayerAnalyticsPage({
         </Link>
       </div>
     );
+  }
+
+  const daysInRange: Date[] = [];
+  const loopStart = new Date(filterStart.getFullYear(), filterStart.getMonth(), filterStart.getDate());
+  const loopEnd = new Date(filterEnd.getFullYear(), filterEnd.getMonth(), filterEnd.getDate());
+
+  let cur = new Date(loopStart);
+  while (cur <= loopEnd) {
+    daysInRange.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  daysInRange.reverse();
+  if (daysInRange.length > 31) {
+    daysInRange.splice(31);
   }
 
   const isOnline = currentTime - new Date(player.lastSeen).getTime() < 120000;
@@ -222,6 +319,30 @@ export default function PlayerAnalyticsPage({
                   <Badge variant="secondary" className="h-7 rounded-lg bg-white/5 px-3 text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground/60 border border-white/5">
                     Offline
                   </Badge>
+                )}
+
+                {player.bmSynced ? (
+                  <Badge variant="outline" className="h-7 gap-1.5 rounded-lg border-emerald-500/20 bg-emerald-500/5 px-3 text-[9px] font-extrabold uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 transition-colors">
+                    <Check className="h-3 w-3 text-emerald-400" />
+                    History Synced
+                  </Badge>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="h-7 gap-1.5 rounded-lg border-amber-500/20 bg-amber-500/5 px-3 text-[9px] font-extrabold uppercase tracking-widest text-amber-400 hover:bg-amber-500/10 transition-colors">
+                      <AlertTriangle className="h-3 w-3 text-amber-400" />
+                      Not Synced
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleManualSync}
+                      disabled={syncing}
+                      className="h-7 gap-1.5 rounded-lg border border-white/10 hover:border-primary/20 bg-white/5 hover:bg-primary/5 px-3 text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground hover:text-primary transition-all disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${syncing ? 'animate-spin' : ''}`} />
+                      {syncing ? 'Syncing...' : 'Sync History'}
+                    </Button>
+                  </div>
                 )}
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground/60">
@@ -368,6 +489,183 @@ export default function PlayerAnalyticsPage({
               </CardContent>
             </Card>
           </div>
+
+          {/* Daily Playtime Timeline */}
+          <Card className="glass-card border-none shadow-none overflow-hidden">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6">
+              <div>
+                <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                  <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                    <Clock className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  Daily Playtime Timeline
+                </CardTitle>
+                <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
+                  Horizontal 24h gantt timeline of player's online sessions.
+                </CardDescription>
+              </div>
+
+              {/* Date Filter Controls */}
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="bg-zinc-950/40 border border-white/5 hover:border-white/10 rounded-xl px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
+                >
+                  <option value="7d">Last 7 Days</option>
+                  <option value="14d">Last 14 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+
+                {dateFilter === "custom" && (
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                    <input
+                      type="date"
+                      value={customStart}
+                      onChange={(e) => setCustomStart(e.target.value)}
+                      className="bg-zinc-950/40 border border-white/5 rounded-xl px-3 py-1 text-xs text-foreground focus:outline-none focus:border-primary/50 font-mono"
+                    />
+                    <span className="text-xs font-bold text-muted-foreground/50">to</span>
+                    <input
+                      type="date"
+                      value={customEnd}
+                      onChange={(e) => setCustomEnd(e.target.value)}
+                      className="bg-zinc-950/40 border border-white/5 rounded-xl px-3 py-1 text-xs text-foreground focus:outline-none focus:border-primary/50 font-mono"
+                    />
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {sessionsLoading ? (
+                <div className="space-y-4 py-8">
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <Skeleton className="h-4 w-32 rounded" />
+                      <Skeleton className="h-6 flex-grow rounded-xl" />
+                    </div>
+                  ))}
+                </div>
+              ) : daysInRange.length === 0 ? (
+                <div className="py-12 text-center border border-dashed border-white/5 rounded-2xl bg-zinc-950/20">
+                  <Clock className="mx-auto h-10 w-10 opacity-15 mb-3 text-primary" />
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-70 italic">No days in selection.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {daysInRange.map((day, dIdx) => {
+                    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0);
+                    const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999);
+
+                    let totalSec = 0;
+                    const daySessions = sessions.filter(session => {
+                      const joinTime = new Date(session.joinedAt).getTime();
+                      const leftTime = session.leftAt ? new Date(session.leftAt).getTime() : currentTime;
+                      return joinTime < dayEnd.getTime() && leftTime > dayStart.getTime();
+                    });
+
+                    daySessions.forEach(session => {
+                      const joinTime = new Date(session.joinedAt).getTime();
+                      const leftTime = session.leftAt ? new Date(session.leftAt).getTime() : currentTime;
+                      const clampedStart = Math.max(joinTime, dayStart.getTime());
+                      const clampedEnd = Math.min(leftTime, dayEnd.getTime());
+                      if (clampedEnd > clampedStart) {
+                        totalSec += (clampedEnd - clampedStart) / 1000;
+                      }
+                    });
+
+                    const formattedTotal = totalSec > 0
+                      ? totalSec < 3600
+                        ? `${Math.round(totalSec / 60)}m`
+                        : `${(totalSec / 3600).toFixed(1)}h`
+                      : "0h";
+
+                    const isToday = new Date().toDateString() === day.toDateString();
+
+                    return (
+                      <div key={dIdx} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group">
+                        {/* Day label */}
+                        <div className="w-full sm:w-40 shrink-0 flex items-center justify-between sm:justify-start gap-2">
+                          <span className={`text-xs font-extrabold font-heading ${isToday ? "text-primary" : "text-foreground/80"}`}>
+                            {day.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                            {isToday && " (Today)"}
+                          </span>
+                          <Badge variant="secondary" className="bg-white/5 border-white/5 text-[9px] font-bold py-0.5 px-2 rounded-md">
+                            {formattedTotal}
+                          </Badge>
+                        </div>
+
+                        {/* Timeline bar */}
+                        <div className="flex-grow relative h-7 bg-zinc-950/40 border border-white/5 rounded-xl overflow-hidden shadow-inner flex items-center">
+                          {/* Hour grid lines */}
+                          {Array.from({ length: 7 }).map((_, idx) => {
+                            const pct = ((idx + 1) * 3 / 24) * 100;
+                            return (
+                              <div
+                                key={idx}
+                                className="absolute top-0 bottom-0 border-l border-white/5 pointer-events-none"
+                                style={{ left: `${pct}%` }}
+                              />
+                            );
+                          })}
+
+                          {/* Sessions blocks */}
+                          {daySessions.map((session, sIdx) => {
+                            const joinTime = new Date(session.joinedAt).getTime();
+                            const leftTime = session.leftAt ? new Date(session.leftAt).getTime() : currentTime;
+                            const clampedStart = Math.max(joinTime, dayStart.getTime());
+                            const clampedEnd = Math.min(leftTime, dayEnd.getTime());
+
+                            const startPercent = ((clampedStart - dayStart.getTime()) / (24 * 60 * 60 * 1000)) * 100;
+                            const widthPercent = Math.max(0.8, ((clampedEnd - clampedStart) / (24 * 60 * 60 * 1000)) * 100);
+
+                            const isActive = session.leftAt === null;
+
+                            return (
+                              <div
+                                key={sIdx}
+                                className={`absolute top-0 bottom-0 transition-all group/session hover:brightness-125 cursor-help ${
+                                  isActive
+                                    ? "bg-gradient-to-r from-emerald-500/35 to-teal-500/35 border-l border-r border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)] animate-pulse"
+                                    : "bg-gradient-to-r from-primary/30 to-primary/45 border-l border-r border-primary/50"
+                                }`}
+                                style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+                              >
+                                {/* Hover tooltip */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/session:flex flex-col gap-1 z-50 bg-zinc-950/95 border border-white/10 p-2.5 rounded-xl shadow-2xl text-[10px] font-mono text-foreground whitespace-nowrap">
+                                  <div className="flex items-center gap-1.5 font-bold">
+                                    {isActive ? (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-ping" />
+                                    ) : null}
+                                    <span className={isActive ? "text-teal-400" : "text-primary"}>
+                                      {isActive ? "ACTIVE NOW" : formatDuration(Math.round((leftTime - joinTime) / 1000))}
+                                    </span>
+                                  </div>
+                                  <div className="text-white/60">
+                                    {new Date(joinTime).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })} -{" "}
+                                    {isActive ? "Present" : new Date(leftTime).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <div className="mt-2 flex justify-between font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/30 pl-0 sm:pl-44 pr-2">
+                    <span>00:00</span>
+                    <span>06:00</span>
+                    <span>12:00</span>
+                    <span>18:00</span>
+                    <span>24:00</span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Weekly Trend Chart */}
           <Card className="glass-card border-none shadow-none overflow-hidden">

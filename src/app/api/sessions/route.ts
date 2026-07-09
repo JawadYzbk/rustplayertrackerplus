@@ -9,8 +9,10 @@ import { z } from "zod";
 const QuerySchema = z.object({
   playerId: z.string().optional(),
   serverId: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(1000).default(50),
 });
 
 export async function GET(req: NextRequest) {
@@ -27,16 +29,30 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { playerId, serverId, page, limit } = parsed.data;
+  const { playerId, serverId, startDate, endDate, page, limit } = parsed.data;
   const skip = (page - 1) * limit;
 
-  const where: {
-    userId: string;
-    playerId?: string;
-    serverId?: string;
-  } = { userId };
+  const where: any = { userId };
   if (playerId) where.playerId = playerId;
   if (serverId) where.serverId = serverId;
+
+  if (startDate || endDate) {
+    const filterConditions: any[] = [];
+    if (endDate) {
+      filterConditions.push({ joinedAt: { lte: new Date(endDate) } });
+    }
+    if (startDate) {
+      filterConditions.push({
+        OR: [
+          { leftAt: null },
+          { leftAt: { gte: new Date(startDate) } },
+        ],
+      });
+    }
+    if (filterConditions.length > 0) {
+      where.AND = filterConditions;
+    }
+  }
 
   const [sessions, total] = await Promise.all([
     prisma.session.findMany({
