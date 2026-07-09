@@ -37,7 +37,7 @@ export async function POST(
     if (!synced) {
       return Response.json(
         { error: "Sync failed. The player history could not be retrieved. Ensure token is valid and player has active Battlemetrics data." },
-        { status: 502 }
+        { status: 400 }
       );
     }
 
