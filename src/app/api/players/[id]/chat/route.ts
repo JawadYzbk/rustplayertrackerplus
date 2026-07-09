@@ -5,7 +5,7 @@ import { GoogleGenerativeAI, SchemaType, FunctionDeclaration } from "@google/gen
 import axios from "axios";
 
 // Gemini Model Configuration
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 // ─── Gemini Tool Declarations ────────────────────────────────────────────────
 const createPlayerGroupTool: FunctionDeclaration = {
@@ -382,8 +382,8 @@ User query: ${lastUserMessageText}`;
       GEMINI_MODEL,
       "gemini-2.5-flash",
       "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-flash-latest"
+      "gemini-flash-latest",
+      "gemini-pro-latest"
     ];
 
     let chat = null;
