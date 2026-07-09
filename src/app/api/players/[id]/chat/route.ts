@@ -5,7 +5,7 @@ import { GoogleGenerativeAI, SchemaType, FunctionDeclaration } from "@google/gen
 import axios from "axios";
 
 // Gemini Model Configuration
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.5-flash";
 
 // ─── Gemini Tool Declarations ────────────────────────────────────────────────
 const createPlayerGroupTool: FunctionDeclaration = {
@@ -380,6 +380,7 @@ User query: ${lastUserMessageText}`;
     // List of models we can try to find an active supported version
     const modelsToTry = [
       GEMINI_MODEL,
+      "gemini-3.5-flash",
       "gemini-2.5-flash",
       "gemini-2.0-flash",
       "gemini-flash-latest",
