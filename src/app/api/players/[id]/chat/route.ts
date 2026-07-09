@@ -5,7 +5,7 @@ import { GoogleGenerativeAI, SchemaType, FunctionDeclaration } from "@google/gen
 import axios from "axios";
 
 // Gemini Model Configuration
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 // ─── Gemini Tool Declarations ────────────────────────────────────────────────
 const createPlayerGroupTool: FunctionDeclaration = {
@@ -230,26 +230,6 @@ System Information:
 
     // ─── Initialize Gemini Client ────────────────────────────────────────────
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: `You are an elite, tactical Rust Player Intelligence Assistant.
-You analyze player playtime history, session logs, and online metrics to provide strategic insights for players (such as identifying sleep schedules to recommend optimal offline raid windows).
-You also interact directly with the player intelligence database using tool calling to organize groups, track players/servers, and monitor live activity.
-
-Always base your raid analysis on the provided Hourly Playtime Heatmap and Session logs. Look for consistent gaps of consecutive offline hours (usually overnight) to suggest raid windows.
-When the user asks you to perform database actions, call the corresponding tools. Once the tools return, summarize the result and state clearly what database actions were performed. Keep your answers brief, action-oriented, and structured.`,
-      tools: [
-        {
-          functionDeclarations: [
-            createPlayerGroupTool,
-            assignPlayerToGroupTool,
-            trackNewServerTool,
-            trackNewPlayerTool,
-            getLiveOnlinePlayersTool,
-          ],
-        },
-      ],
-    });
 
     // ─── Function Call Executors ─────────────────────────────────────────────
     const executeToolCall = async (name: string, args: any) => {
@@ -397,12 +377,63 @@ ${contextString}
 
 User query: ${lastUserMessageText}`;
 
-    const chat = model.startChat({
-      history: chatHistory,
-    });
+    // List of models we can try to find an active supported version
+    const modelsToTry = [
+      GEMINI_MODEL,
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+      "gemini-flash-latest"
+    ];
 
-    let result = await chat.sendMessage(contextualMessage);
-    let response = result.response;
+    let chat = null;
+    let response = null;
+    let success = false;
+    let lastErr = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`[Gemini Chat API] Initializing model: ${modelName}`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: `You are an elite, tactical Rust Player Intelligence Assistant.
+You analyze player playtime history, session logs, and online metrics to provide strategic insights for players (such as identifying sleep schedules to recommend optimal offline raid windows).
+You also interact directly with the player intelligence database using tool calling to organize groups, track players/servers, and monitor live activity.
+
+Always base your raid analysis on the provided Hourly Playtime Heatmap and Session logs. Look for consistent gaps of consecutive offline hours (usually overnight) to suggest raid windows.
+When the user asks you to perform database actions, call the corresponding tools. Once the tools return, summarize the result and state clearly what database actions were performed. Keep your answers brief, action-oriented, and structured.`,
+          tools: [
+            {
+              functionDeclarations: [
+                createPlayerGroupTool,
+                assignPlayerToGroupTool,
+                trackNewServerTool,
+                trackNewPlayerTool,
+                getLiveOnlinePlayersTool,
+              ],
+            },
+          ],
+        });
+
+        chat = model.startChat({
+          history: chatHistory,
+        });
+
+        const result = await chat.sendMessage(contextualMessage);
+        response = result.response;
+        success = true;
+        console.log(`[Gemini Chat API] Success using model: ${modelName}`);
+        break; // Successfully initialized and queried!
+      } catch (err: any) {
+        console.warn(`[Gemini Chat API] Attempt with model ${modelName} failed: ${err.message}`);
+        lastErr = err;
+      }
+    }
+
+    if (!success || !response || !chat) {
+      throw lastErr || new Error("All active Gemini models failed to initialize.");
+    }
+
     let functionCalls = response.functionCalls();
 
     // Loop handles multiple rounds of function calls if predicted by Gemini
