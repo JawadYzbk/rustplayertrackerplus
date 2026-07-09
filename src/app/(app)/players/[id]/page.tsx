@@ -7,14 +7,19 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Bot,
   Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Loader2,
   RefreshCw,
+  Send,
   Server,
+  Sparkles,
   Users,
+  User,
 } from "lucide-react";
 import {
   Bar,
@@ -138,6 +143,106 @@ export default function PlayerAnalyticsPage({
   });
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "model"; content: string }[]>([
+    {
+      role: "model",
+      content: "Hi! I am your Tactical Intel Assistant. I can analyze this player's session patterns to recommend optimal offline raid windows, create groups, track players or servers, and scan live activity. What would you like to know?"
+    }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+
+  const renderChatMessageContent = (content: string) => {
+    const lines = content.split("\n");
+    return lines.map((line, idx) => {
+      const isListItem = line.trim().startsWith("-") || line.trim().startsWith("*");
+      let lineText = isListItem ? line.trim().substring(1).trim() : line;
+
+      const parts = [];
+      let currentText = lineText;
+      let boldIndex = currentText.indexOf("**");
+      
+      while (boldIndex !== -1) {
+        const nextBoldIndex = currentText.indexOf("**", boldIndex + 2);
+        if (nextBoldIndex === -1) break;
+        
+        if (boldIndex > 0) {
+          parts.push(currentText.substring(0, boldIndex));
+        }
+        parts.push(
+          <strong key={boldIndex} className="font-extrabold text-primary">
+            {currentText.substring(boldIndex + 2, nextBoldIndex)}
+          </strong>
+        );
+        currentText = currentText.substring(nextBoldIndex + 2);
+        boldIndex = currentText.indexOf("**");
+      }
+      
+      if (currentText.length > 0) {
+        parts.push(currentText);
+      }
+
+      if (isListItem) {
+        return (
+          <li key={idx} className="list-disc ml-5 my-1 text-xs text-foreground/90 font-mono leading-relaxed">
+            {parts}
+          </li>
+        );
+      }
+
+      return (
+        <p key={idx} className="my-1 text-xs text-foreground/90 leading-relaxed min-h-[1em]">
+          {parts}
+        </p>
+      );
+    });
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent, directMessage?: string) => {
+    if (e) e.preventDefault();
+    const query = directMessage || chatInput;
+    if (!query.trim() || chatSending) return;
+
+    setChatSending(true);
+    if (!directMessage) {
+      setChatInput("");
+    }
+
+    const newMessages = [...chatMessages, { role: "user" as const, content: query }];
+    setChatMessages(newMessages);
+
+    try {
+      const response = await axios.post(`/api/players/${id}/chat`, {
+        messages: newMessages
+      });
+
+      setChatMessages(prev => [...prev, response.data]);
+      
+      if (response.data.content.toLowerCase().includes("successfully created") || 
+          response.data.content.toLowerCase().includes("assigned to group") ||
+          response.data.content.toLowerCase().includes("now tracked")) {
+        const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+        const analyticsResponse = await axios.get(`/api/players/${id}/analytics`, {
+          params: { timezoneOffsetMinutes },
+        });
+        setPlayer(analyticsResponse.data.player);
+        setAnalytics(analyticsResponse.data.analytics);
+      }
+
+    } catch (error: any) {
+      console.error(error);
+      const errMsg = error.response?.data?.error || "Error connecting to AI chat helper.";
+      toast.error(errMsg);
+      setChatMessages(prev => [...prev, { role: "model", content: `❌ Error: ${errMsg}` }]);
+    } finally {
+      setChatSending(false);
+    }
+  };
+
+  const handleSuggestedQuery = (query: string) => {
+    handleSendMessage(undefined, query);
+  };
 
   const handleManualSync = async () => {
     setSyncing(true);
@@ -454,6 +559,9 @@ export default function PlayerAnalyticsPage({
           <TabsTrigger value="overview" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Overview</TabsTrigger>
           <TabsTrigger value="forecast" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Forecast</TabsTrigger>
           <TabsTrigger value="sessions" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20">Sessions</TabsTrigger>
+          <TabsTrigger value="ai" className="rounded-xl px-6 h-11 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg shadow-primary/20 flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" /> AI Assistant
+          </TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW CONTENT */}
@@ -957,6 +1065,118 @@ export default function PlayerAnalyticsPage({
                 )}
               </div>
             </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* AI ASSISTANT CONTENT */}
+        <TabsContent value="ai" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="glass-card border-none shadow-none overflow-hidden flex flex-col h-[650px]">
+            <CardHeader className="border-b border-white/5 pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                  <Sparkles className="h-4.5 w-4.5 text-primary" />
+                </div>
+                AI Tactical Intel Assistant
+              </CardTitle>
+              <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
+                Chat with Gemini about this player's patterns, groups, server presence, or request tactical database modifications.
+              </CardDescription>
+            </CardHeader>
+            
+            {/* Messages Area */}
+            <CardContent className="flex-grow overflow-y-auto p-6 space-y-4 min-h-0 scrollbar-thin">
+              {chatMessages.map((msg, index) => {
+                const isModel = msg.role === "model";
+                return (
+                  <div key={index} className={`flex gap-3 max-w-[85%] ${isModel ? "" : "ml-auto flex-row-reverse"}`}>
+                    {/* Icon */}
+                    <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center border ${
+                      isModel 
+                        ? "bg-primary/10 border-primary/20 text-primary shadow-md shadow-primary/5" 
+                        : "bg-white/5 border-white/10 text-muted-foreground"
+                    }`}>
+                      {isModel ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                    </div>
+                    
+                    {/* Message Bubble */}
+                    <div className={`rounded-2xl p-4 text-xs shadow-inner leading-relaxed ${
+                      isModel 
+                        ? "bg-zinc-950/40 border border-white/5 text-foreground/90 rounded-tl-sm" 
+                        : "bg-primary/10 border border-primary/10 text-foreground rounded-tr-sm"
+                    }`}>
+                      {msg.role === "model" ? (
+                        <div className="space-y-1">{renderChatMessageContent(msg.content)}</div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {chatSending && (
+                <div className="flex gap-3 max-w-[85%]">
+                  <div className="h-8 w-8 rounded-lg shrink-0 flex items-center justify-center border bg-primary/10 border-primary/20 text-primary shadow-md shadow-primary/5">
+                    <Bot className="h-4 w-4" />
+                  </div>
+                  <div className="rounded-2xl p-4 text-xs bg-zinc-950/40 border border-white/5 text-foreground/90 rounded-tl-sm flex items-center gap-3">
+                    <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
+                    <span className="font-semibold text-muted-foreground animate-pulse">Analyzing player intel and synchronizing data...</span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            
+            {/* Input Bar */}
+            <div className="p-4 border-t border-white/5 bg-zinc-950/20 space-y-3">
+              {/* Quick Prompt Suggestions */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSuggestedQuery("Suggest the optimal offline raid window based on their activity patterns.")}
+                  disabled={chatSending}
+                  className="text-[10px] font-bold uppercase tracking-widest border border-white/5 bg-white/5 text-muted-foreground hover:text-primary hover:border-primary/20 px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🎯 Raid Window Analysis
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSuggestedQuery(`Create a group called 'Potential Raiders' with red color (#ef4444) and assign this player.`)}
+                  disabled={chatSending}
+                  className="text-[10px] font-bold uppercase tracking-widest border border-white/5 bg-white/5 text-muted-foreground hover:text-primary hover:border-primary/20 px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🏷️ Group & Assign Player
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSuggestedQuery("Scan the server and tell me who is currently online.")}
+                  disabled={chatSending}
+                  className="text-[10px] font-bold uppercase tracking-widest border border-white/5 bg-white/5 text-muted-foreground hover:text-primary hover:border-primary/20 px-3 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🌐 Scan Live Server
+                </button>
+              </div>
+              
+              {/* Input Form */}
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  disabled={chatSending}
+                  placeholder="Ask Gemini to analyze patterns, group players, track servers..."
+                  className="flex-grow bg-zinc-950/40 border border-white/5 focus:border-primary/50 text-foreground placeholder:text-muted-foreground/50 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none transition-all disabled:opacity-50"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={chatSending || !chatInput.trim()} 
+                  className="rounded-xl px-5 h-9 text-xs font-bold uppercase tracking-widest flex items-center gap-2 cursor-pointer"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send
+                </Button>
+              </form>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
