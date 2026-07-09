@@ -625,10 +625,10 @@ export default function PlayerAnalyticsPage({
                             return (
                               <div
                                 key={sIdx}
-                                className={`absolute top-1 bottom-1 rounded-md transition-all group/session hover:brightness-125 cursor-help ${
+                                className={`absolute top-0 bottom-0 transition-all group/session hover:brightness-125 cursor-help ${
                                   isActive
-                                    ? "bg-gradient-to-r from-emerald-500/35 to-teal-500/35 border border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)] animate-pulse"
-                                    : "bg-gradient-to-r from-primary/30 to-primary/45 border border-primary/50"
+                                    ? "bg-gradient-to-r from-emerald-500/35 to-teal-500/35 border-l border-r border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)] animate-pulse"
+                                    : "bg-gradient-to-r from-primary/30 to-primary/45 border-l border-r border-primary/50"
                                 }`}
                                 style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
                               >
