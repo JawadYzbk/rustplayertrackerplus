@@ -99,6 +99,39 @@ const getLiveOnlinePlayersTool: FunctionDeclaration = {
   },
 };
 
+// ─── GET: Retrieve Chat Session History ──────────────────────────────────────
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
+  const { id } = await params;
+
+  try {
+    const dbMessages = await prisma.chatMessage.findMany({
+      where: { userId, playerId: id },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return NextResponse.json(
+      dbMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }))
+    );
+  } catch (error: any) {
+    console.error("Error retrieving chat history:", error);
+    return NextResponse.json({ error: "Failed to load chat history" }, { status: 500 });
+  }
+}
+
+// ─── POST: Send message, invoke Gemini model and tools ───────────────────────
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -112,10 +145,10 @@ export async function POST(
 
   const { id } = await params;
   const body = await req.json();
-  const { messages } = body;
+  const { message } = body;
 
-  if (!messages || !Array.isArray(messages)) {
-    return NextResponse.json({ error: "Messages array required" }, { status: 400 });
+  if (!message || typeof message !== "string") {
+    return NextResponse.json({ error: "Message content is required" }, { status: 400 });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -127,6 +160,16 @@ export async function POST(
   }
 
   try {
+    // ─── Save User Message to Database ───────────────────────────────────────
+    await prisma.chatMessage.create({
+      data: {
+        userId,
+        playerId: id,
+        role: "user",
+        content: message,
+      },
+    });
+
     // ─── Fetch Player Context Data ───────────────────────────────────────────
     const player = await prisma.player.findUnique({
       where: { userId_id: { userId, id } },
@@ -140,7 +183,7 @@ export async function POST(
       return NextResponse.json({ error: "Player profile not found" }, { status: 404 });
     }
 
-    const [hourlyStats, sessions, groups, servers] = await Promise.all([
+    const [hourlyStats, sessions, groups, servers, dbMessages] = await Promise.all([
       prisma.playerHourlyStat.findMany({
         where: { userId, playerId: id },
         orderBy: { hour: "asc" },
@@ -155,6 +198,10 @@ export async function POST(
       }),
       prisma.server.findMany({
         where: { userId },
+      }),
+      prisma.chatMessage.findMany({
+        where: { userId, playerId: id },
+        orderBy: { createdAt: "asc" },
       }),
     ]);
 
@@ -331,20 +378,24 @@ When the user asks you to perform database actions, call the corresponding tools
     };
 
     // ─── Chat Thread Loop ────────────────────────────────────────────────────
-    // Translate incoming chat history into Gemini SDK format
-    const chatHistory = messages.slice(0, -1).map((m: any) => ({
+    // Translate database messages (excluding the last one which is user's active query) into Gemini history
+    const rawHistory = dbMessages.slice(0, -1).map((m) => ({
       role: m.role === "user" ? "user" : "model",
       parts: [{ text: m.content }],
     }));
 
-    const lastMessage = messages[messages.length - 1].content;
+    // Ensure the history strictly starts with a 'user' message as required by Gemini
+    const firstUserIndex = rawHistory.findIndex((m) => m.role === "user");
+    const chatHistory = firstUserIndex !== -1 ? rawHistory.slice(firstUserIndex) : [];
+
+    const lastUserMessageText = dbMessages[dbMessages.length - 1].content;
     
     // Inject Target Context into the first message to bootstrap target awareness
     const contextualMessage = `[TARGET CONTEXT]
 ${contextString}
 [/TARGET CONTEXT]
 
-User query: ${lastMessage}`;
+User query: ${lastUserMessageText}`;
 
     const chat = model.startChat({
       history: chatHistory,
@@ -375,13 +426,51 @@ User query: ${lastMessage}`;
       functionCalls = response.functionCalls();
     }
 
+    const responseText = response.text();
+
+    // ─── Save Gemini Message to Database ─────────────────────────────────────
+    await prisma.chatMessage.create({
+      data: {
+        userId,
+        playerId: id,
+        role: "model",
+        content: responseText,
+      },
+    });
+
     return NextResponse.json({
       role: "model",
-      content: response.text(),
+      content: responseText,
     });
 
   } catch (error: any) {
     console.error("Gemini Chat API error:", error);
     return NextResponse.json({ error: error.message || "Failed to process chat" }, { status: 500 });
+  }
+}
+
+// ─── DELETE: Clear Chat History ──────────────────────────────────────────────
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  let userId: string;
+  try {
+    userId = await requireCurrentUserId();
+  } catch {
+    return unauthorizedJsonResponse();
+  }
+
+  const { id } = await params;
+
+  try {
+    await prisma.chatMessage.deleteMany({
+      where: { userId, playerId: id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error clearing chat history:", error);
+    return NextResponse.json({ error: "Failed to clear chat history" }, { status: 500 });
   }
 }

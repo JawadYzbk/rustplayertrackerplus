@@ -18,6 +18,7 @@ import {
   Send,
   Server,
   Sparkles,
+  Trash2,
   Users,
   User,
 } from "lucide-react";
@@ -209,12 +210,12 @@ export default function PlayerAnalyticsPage({
       setChatInput("");
     }
 
-    const newMessages = [...chatMessages, { role: "user" as const, content: query }];
-    setChatMessages(newMessages);
+    // Append the user's message locally first
+    setChatMessages(prev => [...prev, { role: "user", content: query }]);
 
     try {
       const response = await axios.post(`/api/players/${id}/chat`, {
-        messages: newMessages
+        message: query
       });
 
       setChatMessages(prev => [...prev, response.data]);
@@ -243,6 +244,44 @@ export default function PlayerAnalyticsPage({
   const handleSuggestedQuery = (query: string) => {
     handleSendMessage(undefined, query);
   };
+
+  const handleClearChat = async () => {
+    try {
+      await axios.delete(`/api/players/${id}/chat`);
+      setChatMessages([
+        {
+          role: "model",
+          content: "Hi! I am your Tactical Intel Assistant. I can analyze this player's session patterns to recommend optimal offline raid windows, create groups, track players or servers, and scan live activity. What would you like to know?"
+        }
+      ]);
+      toast.success("Chat history cleared successfully.");
+    } catch (error) {
+      console.error("Failed to clear chat history:", error);
+      toast.error("Failed to clear chat history.");
+    }
+  };
+
+  // Load chat session history from DB on load
+  useEffect(() => {
+    async function fetchChatHistory() {
+      try {
+        const response = await axios.get(`/api/players/${id}/chat`);
+        if (response.data && response.data.length > 0) {
+          setChatMessages(response.data);
+        } else {
+          setChatMessages([
+            {
+              role: "model",
+              content: "Hi! I am your Tactical Intel Assistant. I can analyze this player's session patterns to recommend optimal offline raid windows, create groups, track players or servers, and scan live activity. What would you like to know?"
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to load chat history:", error);
+      }
+    }
+    fetchChatHistory();
+  }, [id]);
 
   const handleManualSync = async () => {
     setSyncing(true);
@@ -1071,16 +1110,28 @@ export default function PlayerAnalyticsPage({
         {/* AI ASSISTANT CONTENT */}
         <TabsContent value="ai" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className="glass-card border-none shadow-none overflow-hidden flex flex-col h-[650px]">
-            <CardHeader className="border-b border-white/5 pb-4">
-              <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
-                <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
-                  <Sparkles className="h-4.5 w-4.5 text-primary" />
-                </div>
-                AI Tactical Intel Assistant
-              </CardTitle>
-              <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
-                Chat with Gemini about this player's patterns, groups, server presence, or request tactical database modifications.
-              </CardDescription>
+            <CardHeader className="border-b border-white/5 pb-4 flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-3 text-xl font-bold font-heading">
+                  <div className="rounded-xl bg-primary/10 p-2.5 border border-primary/10">
+                    <Sparkles className="h-4.5 w-4.5 text-primary" />
+                  </div>
+                  AI Tactical Intel Assistant
+                </CardTitle>
+                <CardDescription className="text-xs font-semibold text-muted-foreground opacity-80 mt-1">
+                  Chat with Gemini about this player's patterns, groups, server presence, or request tactical database modifications.
+                </CardDescription>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearChat}
+                className="h-8 gap-1.5 rounded-lg border border-white/5 hover:border-red-500/20 bg-white/5 hover:bg-red-500/5 px-3 text-[9px] font-extrabold uppercase tracking-widest text-muted-foreground hover:text-red-400 transition-all cursor-pointer shrink-0"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Clear Chat
+              </Button>
             </CardHeader>
             
             {/* Messages Area */}

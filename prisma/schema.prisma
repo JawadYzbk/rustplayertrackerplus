@@ -31,6 +31,7 @@ model AppUser {
   sessions    Session[]
   dailyStats  PlayerDailyStat[]
   hourlyStats PlayerHourlyStat[]
+  chatMessages ChatMessage[]
 }
 
 model Server {
@@ -90,6 +91,7 @@ model Player {
   sessions    Session[]
   dailyStats  PlayerDailyStat[]
   hourlyStats PlayerHourlyStat[]
+  chatMessages ChatMessage[]
 
   @@id([userId, id])
   @@index([userId, serverId, lastSeen(sort: Desc)])
@@ -155,4 +157,18 @@ model PlayerHourlyStat {
 
   @@unique([userId, playerId, hour])
   @@index([userId, playerId])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  playerId  String
+  role      String   // 'user' or 'model'
+  content   String
+  createdAt DateTime @default(now())
+
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player Player  @relation(fields: [userId, playerId], references: [userId, id], onDelete: Cascade)
+
+  @@index([userId, playerId, createdAt(sort: Asc)])
 }
