@@ -127,7 +127,7 @@ export async function fetchAndSaveBMSessions(userId: string, playerId: string, s
       durationSec: number | null;
     }[] = [];
 
-    let nextUrl: string | null = `https://api.battlemetrics.com/sessions?filter[player]=${playerId}&filter[servers]=${serverId}&page[size]=100`;
+    let nextUrl: string | null = `https://api.battlemetrics.com/sessions?filter[players]=${playerId}&filter[servers]=${serverId}&page[size]=100`;
     let pagesFetched = 0;
     const maxPages = 5;
     let anySuccess = false;
