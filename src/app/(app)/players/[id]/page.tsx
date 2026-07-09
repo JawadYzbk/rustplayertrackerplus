@@ -597,10 +597,10 @@ export default function PlayerAnalyticsPage({
                         </div>
 
                         {/* Timeline bar */}
-                        <div className="flex-grow relative h-7 bg-zinc-950/40 border border-white/5 rounded-xl overflow-hidden shadow-inner flex items-center">
+                        <div className="flex-grow relative h-7 bg-zinc-950/40 border border-white/5 rounded-xl shadow-inner flex items-center">
                           {/* Hour grid lines */}
-                          {Array.from({ length: 7 }).map((_, idx) => {
-                            const pct = ((idx + 1) * 3 / 24) * 100;
+                          {Array.from({ length: 11 }).map((_, idx) => {
+                            const pct = ((idx + 1) * 2 / 24) * 100;
                             return (
                               <div
                                 key={idx}
@@ -625,10 +625,10 @@ export default function PlayerAnalyticsPage({
                             return (
                               <div
                                 key={sIdx}
-                                className={`absolute top-0 bottom-0 transition-all group/session hover:brightness-125 cursor-help ${
+                                className={`absolute top-1 bottom-1 rounded-md transition-all group/session hover:brightness-125 cursor-help ${
                                   isActive
-                                    ? "bg-gradient-to-r from-emerald-500/35 to-teal-500/35 border-l border-r border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)] animate-pulse"
-                                    : "bg-gradient-to-r from-primary/30 to-primary/45 border-l border-r border-primary/50"
+                                    ? "bg-gradient-to-r from-emerald-500/35 to-teal-500/35 border border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.3)] animate-pulse"
+                                    : "bg-gradient-to-r from-primary/30 to-primary/45 border border-primary/50"
                                 }`}
                                 style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
                               >
@@ -655,12 +655,38 @@ export default function PlayerAnalyticsPage({
                     );
                   })}
 
-                  <div className="mt-2 flex justify-between font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/30 pl-0 sm:pl-44 pr-2">
-                    <span>00:00</span>
-                    <span>06:00</span>
-                    <span>12:00</span>
-                    <span>18:00</span>
-                    <span>24:00</span>
+                  {/* X-axis labels row */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-1">
+                    {/* Spacer matching Day label column width */}
+                    <div className="hidden sm:block sm:w-40 shrink-0" />
+                    
+                    {/* Labels container matching Timeline bar width */}
+                    <div className="flex-grow relative h-4 font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/30">
+                      {Array.from({ length: 13 }).map((_, idx) => {
+                        const hour = idx * 2;
+                        const pct = (hour / 24) * 100;
+                        
+                        // Responsive visibility class to prevent crowding on small viewports
+                        let visibilityClass = "";
+                        if (hour % 6 !== 0) {
+                          if (hour % 4 === 0) {
+                            visibilityClass = "hidden md:inline";
+                          } else {
+                            visibilityClass = "hidden lg:inline";
+                          }
+                        }
+                        
+                        return (
+                          <span
+                            key={hour}
+                            className={`absolute top-0 -translate-x-1/2 text-center ${visibilityClass}`}
+                            style={{ left: `${pct}%` }}
+                          >
+                            {hour.toString().padStart(2, "0")}:00
+                          </span>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
