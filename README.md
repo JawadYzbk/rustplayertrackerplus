@@ -159,7 +159,7 @@ Session log
 - Node.js 20+
 - npm 10+
 - PostgreSQL database
-- Optional BattleMetrics API token for authenticated API access
+- Required BattleMetrics API token for all API access (BattleMetrics enforces authorized requests for all endpoints)
 
 ## Environment Variables
 
@@ -175,7 +175,7 @@ RENDER_EXTERNAL_URL=""
 ### Variable Notes
 
 - `DATABASE_URL`: Required. PostgreSQL connection string used by Prisma.
-- `BATTLEMETRICS_TOKEN`: Optional but recommended for authenticated BattleMetrics requests.
+- `BATTLEMETRICS_TOKEN`: Required. The API key/token for BattleMetrics requests.
 - `PORT`: Optional runtime port. Defaults to `3000`.
 - `RENDER_EXTERNAL_URL`: Optional production self-ping URL used by the worker on Render.
 

@@ -265,13 +265,19 @@ System Information:
               return { success: false, message: `Server '${existing.name}' is already tracked.` };
             }
 
+            const token = process.env.BATTLEMETRICS_TOKEN;
+            if (!token) {
+              return { success: false, message: "Battlemetrics API token is missing in server environment. Cannot track server." };
+            }
+
             let name = `Rust Server ${serverId}`;
             try {
-              const headers: Record<string, string> = {};
-              if (process.env.BATTLEMETRICS_TOKEN) {
-                headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
-              }
-              const { data } = await axios.get(`https://api.battlemetrics.com/servers/${serverId}`, { headers, timeout: 5000 });
+              const { data } = await axios.get(`https://api.battlemetrics.com/servers/${serverId}`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                timeout: 5000,
+              });
               if (data?.data?.attributes?.name) {
                 name = data.data.attributes.name;
               }
@@ -301,14 +307,20 @@ System Information:
               return { success: false, message: `Server (ID: ${serverId}) must be tracked first before adding players.` };
             }
 
+            const token = process.env.BATTLEMETRICS_TOKEN;
+            if (!token) {
+              return { success: false, message: "Battlemetrics API token is missing in server environment. Cannot track player." };
+            }
+
             let playerName = args.name || `Unknown Player ${playerId}`;
             if (!args.name) {
               try {
-                const headers: Record<string, string> = {};
-                if (process.env.BATTLEMETRICS_TOKEN) {
-                  headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
-                }
-                const { data } = await axios.get(`https://api.battlemetrics.com/players/${playerId}`, { headers, timeout: 5000 });
+                const { data } = await axios.get(`https://api.battlemetrics.com/players/${playerId}`, {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                  timeout: 5000,
+                });
                 if (data?.data?.attributes?.name) {
                   playerName = data.data.attributes.name;
                 }
@@ -337,11 +349,16 @@ System Information:
           }
           case "getLiveOnlinePlayers": {
             const serverId = args.serverId;
-            const headers: Record<string, string> = {};
-            if (process.env.BATTLEMETRICS_TOKEN) {
-              headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
+            const token = process.env.BATTLEMETRICS_TOKEN;
+            if (!token) {
+              return { success: false, message: "Battlemetrics API token is missing in server environment. Cannot get live online players." };
             }
-            const { data } = await axios.get(`https://api.battlemetrics.com/servers/${serverId}?include=player`, { headers, timeout: 5000 });
+            const { data } = await axios.get(`https://api.battlemetrics.com/servers/${serverId}?include=player`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              timeout: 5000,
+            });
             const included = data.included || [];
             const players = included
               .filter((inc: any) => inc.type === "player")

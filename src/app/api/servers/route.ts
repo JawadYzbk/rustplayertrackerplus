@@ -62,13 +62,18 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Server already exists" }, { status: 409 });
   }
 
+  const token = process.env.BATTLEMETRICS_TOKEN;
+  if (!token) {
+    return Response.json({ error: "Battlemetrics API token is missing in server environment" }, { status: 400 });
+  }
+
   let name = `Rust Server ${id}`;
   try {
-    const headers: Record<string, string> = {};
-    if (process.env.BATTLEMETRICS_TOKEN) {
-      headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
-    }
-    const { data } = await axios.get(`https://api.battlemetrics.com/servers/${id}`, { headers });
+    const { data } = await axios.get(`https://api.battlemetrics.com/servers/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (data?.data?.attributes?.name) {
       name = data.data.attributes.name;
     }

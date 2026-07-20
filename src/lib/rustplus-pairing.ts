@@ -271,7 +271,16 @@ function registerWithRustPlus(authToken: string, expoPushToken: string) {
 
 async function findBattleMetricsId(ip: string, port: string | number): Promise<string | null> {
   try {
+    const token = process.env.BATTLEMETRICS_TOKEN;
+    if (!token) {
+      console.error("BattleMetrics token is missing. Cannot search server ID.");
+      return null;
+    }
+
     const response = await axios.get("https://api.battlemetrics.com/servers", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       params: {
         "filter[search]": `${ip}:${port}`,
         "filter[game]": "rust",

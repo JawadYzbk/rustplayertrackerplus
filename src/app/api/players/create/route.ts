@@ -61,14 +61,19 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Server does not exist in tracker" }, { status: 400 });
   }
 
+  const token = process.env.BATTLEMETRICS_TOKEN;
+  if (!token) {
+    return Response.json({ error: "Battlemetrics API token is missing in server environment" }, { status: 400 });
+  }
+
   let playerName = name || `Unknown Player ${id}`;
   if (!name) {
     try {
-      const headers: Record<string, string> = {};
-      if (process.env.BATTLEMETRICS_TOKEN) {
-        headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
-      }
-      const { data } = await axios.get(`https://api.battlemetrics.com/players/${id}`, { headers });
+      const { data } = await axios.get(`https://api.battlemetrics.com/players/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (data?.data?.attributes?.name) {
         playerName = data.data.attributes.name;
       }

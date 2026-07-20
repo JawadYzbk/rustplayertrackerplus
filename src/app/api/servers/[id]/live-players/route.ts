@@ -43,15 +43,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     return Response.json({ error: "Server not found" }, { status: 404 });
   }
 
-  try {
-    const headers: Record<string, string> = {};
-    if (process.env.BATTLEMETRICS_TOKEN) {
-      headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
-    }
+  const token = process.env.BATTLEMETRICS_TOKEN;
+  if (!token) {
+    return Response.json({ error: "Battlemetrics API token is missing in server environment" }, { status: 400 });
+  }
 
+  try {
     const { data } = await axios.get<LivePlayerResponse>(
       `https://api.battlemetrics.com/servers/${id}?include=player,session`,
-      { headers }
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
     const included = data.included || [];

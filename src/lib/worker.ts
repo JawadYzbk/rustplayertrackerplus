@@ -181,6 +181,12 @@ async function runPollLoop(): Promise<void> {
 
 async function runPoll(): Promise<void> {
   try {
+    const token = process.env.BATTLEMETRICS_TOKEN;
+    if (!token) {
+      console.warn("[Worker] BattleMetrics API token is missing in server environment. Skipping poll cycle.");
+      return;
+    }
+
     const servers = await prisma.server.findMany({
       select: { userId: true, id: true },
     });
@@ -215,12 +221,17 @@ async function pollServer(userId: string, serverId: string): Promise<void> {
     });
     if (!server) return;
 
+    const token = process.env.BATTLEMETRICS_TOKEN;
+    if (!token) {
+      console.error(`[Worker] BattleMetrics token is missing during server ${serverId} poll.`);
+      return;
+    }
+
     const rustPlusCredentials = getRustPlusCredentials(server);
     const url = `https://api.battlemetrics.com/servers/${serverId}?include=player,session`;
-    const headers: Record<string, string> = {};
-    if (process.env.BATTLEMETRICS_TOKEN) {
-      headers["Authorization"] = `Bearer ${process.env.BATTLEMETRICS_TOKEN}`;
-    }
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
 
     const { data } = await axios.get<BMServerResponse>(url, {
       headers,
