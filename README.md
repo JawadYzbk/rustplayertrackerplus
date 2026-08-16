@@ -288,6 +288,11 @@ docker run --env-file .env -p 3000:3000 rust-player-tracker-plus
 - Add export/reporting features for server administrators
 - Add richer observability and alerting for worker failures
 
-## License
+## 📄 License
 
-This repository is currently marked as private. Update this section with your preferred license before publishing publicly.
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)** License.
+
+- ✅ **Free for Personal & Community Use**: You are free to use, modify, share, and build upon this software.
+- ❌ **Non-Commercial**: You may **not** sell, paywall, or use this software or derived works for commercial monetization.
+- 🔄 **ShareAlike & Open Source**: Any modifications or derivatives must remain open source and distributed under the exact same license terms.
+
