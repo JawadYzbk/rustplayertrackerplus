@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-19-149eca?logo=react)](https://react.dev/)
 [![Prisma](https://img.shields.io/badge/Prisma-7-2d3748?logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?logo=postgresql)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/license-Private-lightgrey)](#license)
+[![License](https://img.shields.io/badge/license-Public-lightgrey)](#license)
 
 Rust Player Tracker Plus is a full-stack analytics platform for tracking player behavior across Rust servers. It combines BattleMetrics data, a PostgreSQL database, and a modern Next.js dashboard to help server players monitor live activity, build player histories, and surface engagement insights.
 <img width="1356" height="473" alt="image" src="https://github.com/user-attachments/assets/7cc211d3-6766-42a9-85bf-27b5a633db4c" />
